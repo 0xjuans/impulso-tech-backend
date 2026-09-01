@@ -25,6 +25,16 @@ public interface LessonCompletionRepository extends JpaRepository<LessonCompleti
     boolean existsByUserIdAndLessonId(Long userId, Long lessonId);
 
     /**
+     * Cuenta el total de lecciones que un usuario ha completado en toda
+     * la plataforma. Se utiliza como métrica agregada de progreso, por
+     * ejemplo para evaluar insignias por hitos de aprendizaje.
+     *
+     * @param userId identificador del usuario.
+     * @return cantidad total de lecciones completadas.
+     */
+    long countByUserId(Long userId);
+
+    /**
      * Localiza la marca de finalización de una lección por parte de un
      * estudiante.
      *

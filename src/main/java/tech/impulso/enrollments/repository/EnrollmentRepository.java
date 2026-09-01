@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import tech.impulso.enrollments.entity.Enrollment;
+import tech.impulso.enrollments.entity.EnrollmentStatus;
 
 import java.util.Optional;
 
@@ -32,4 +33,15 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      * @return página con las inscripciones del estudiante.
      */
     Page<Enrollment> findByUserId(Long userId, Pageable pageable);
+
+    /**
+     * Cuenta cuántas inscripciones del usuario se encuentran en el
+     * estado indicado. Se utiliza como métrica de progreso agregado
+     * (por ejemplo, cursos completados para el sistema de insignias).
+     *
+     * @param userId identificador del usuario.
+     * @param status estado a contar.
+     * @return cantidad de inscripciones en ese estado.
+     */
+    long countByUserIdAndStatus(Long userId, EnrollmentStatus status);
 }

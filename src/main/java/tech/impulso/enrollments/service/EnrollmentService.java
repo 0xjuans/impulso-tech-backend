@@ -18,6 +18,7 @@ import tech.impulso.enrollments.entity.EnrollmentStatus;
 import tech.impulso.enrollments.entity.LessonCompletion;
 import tech.impulso.enrollments.repository.EnrollmentRepository;
 import tech.impulso.enrollments.repository.LessonCompletionRepository;
+import tech.impulso.gamification.service.BadgeService;
 import tech.impulso.gamification.service.StreakService;
 import tech.impulso.gamification.service.XpService;
 import tech.impulso.lessons.entity.Lesson;
@@ -47,6 +48,7 @@ public class EnrollmentService {
     private final CurrentUserService currentUserService;
     private final XpService xpService;
     private final StreakService streakService;
+    private final BadgeService badgeService;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              LessonCompletionRepository completionRepository,
@@ -54,7 +56,8 @@ public class EnrollmentService {
                              CourseRepository courseRepository,
                              CurrentUserService currentUserService,
                              XpService xpService,
-                             StreakService streakService) {
+                             StreakService streakService,
+                             BadgeService badgeService) {
         this.enrollmentRepository = enrollmentRepository;
         this.completionRepository = completionRepository;
         this.lessonRepository = lessonRepository;
@@ -62,6 +65,7 @@ public class EnrollmentService {
         this.currentUserService = currentUserService;
         this.xpService = xpService;
         this.streakService = streakService;
+        this.badgeService = badgeService;
     }
 
     /**
@@ -156,6 +160,9 @@ public class EnrollmentService {
         // Cualquier lección completada (incluso opcional o repetida) cuenta
         // como actividad válida para efectos de la racha de aprendizaje.
         streakService.registerActivity(user);
+        // Reevaluamos el catálogo de insignias con las nuevas métricas del
+        // usuario. El servicio ignora las insignias ya poseídas.
+        badgeService.evaluateAndAward(user);
 
         return buildProgress(enrollment, course);
     }
