@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import tech.impulso.admin.service.AdminActivityLogger;
 import tech.impulso.users.entity.Role;
 import tech.impulso.users.entity.User;
 import tech.impulso.users.entity.UserStatus;
@@ -38,6 +39,7 @@ public class AdminBootstrap implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AdminActivityLogger activityLogger;
     private final String email;
     private final String username;
     private final String password;
@@ -46,6 +48,7 @@ public class AdminBootstrap implements CommandLineRunner {
 
     public AdminBootstrap(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
+                          AdminActivityLogger activityLogger,
                           @Value("${app.admin.email:}") String email,
                           @Value("${app.admin.username:}") String username,
                           @Value("${app.admin.password:}") String password,
@@ -53,6 +56,7 @@ public class AdminBootstrap implements CommandLineRunner {
                           @Value("${app.admin.last-name:}") String lastName) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.activityLogger = activityLogger;
         this.email = email;
         this.username = username;
         this.password = password;
@@ -94,7 +98,14 @@ public class AdminBootstrap implements CommandLineRunner {
         admin.setRole(Role.ADMINISTRADOR);
         admin.setStatus(UserStatus.ACTIVA);
         admin.setEmailVerifiedAt(OffsetDateTime.now(ZoneOffset.UTC));
-        userRepository.save(admin);
+        admin = userRepository.save(admin);
+
+        activityLogger.log(
+                null,
+                AdminActivityLogger.ACTION_ADMIN_BOOTSTRAPPED,
+                AdminActivityLogger.TARGET_USER,
+                admin.getId(),
+                "Creación automática del primer administrador durante el arranque.");
 
         log.info("Administrador inicial creado: {}", normalizedEmail);
     }

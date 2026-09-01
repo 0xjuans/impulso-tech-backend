@@ -33,10 +33,14 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
+    private final AdminActivityLogger activityLogger;
 
-    public AdminUserService(UserRepository userRepository, CurrentUserService currentUserService) {
+    public AdminUserService(UserRepository userRepository,
+                            CurrentUserService currentUserService,
+                            AdminActivityLogger activityLogger) {
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
+        this.activityLogger = activityLogger;
     }
 
     /**
@@ -89,8 +93,15 @@ public class AdminUserService {
                     "Un administrador no puede modificar su propio rol.");
         }
 
+        Role previousRole = target.getRole();
         target.setRole(newRole);
         userRepository.save(target);
+        activityLogger.log(
+                admin,
+                AdminActivityLogger.ACTION_USER_ROLE_CHANGED,
+                AdminActivityLogger.TARGET_USER,
+                target.getId(),
+                "%s -> %s".formatted(previousRole, newRole));
         return AdminUserResponse.from(target);
     }
 
@@ -119,8 +130,15 @@ public class AdminUserService {
                     "Un administrador no puede modificar su propio estado de cuenta.");
         }
 
+        UserStatus previousStatus = target.getStatus();
         target.setStatus(newStatus);
         userRepository.save(target);
+        activityLogger.log(
+                admin,
+                AdminActivityLogger.ACTION_USER_STATUS_CHANGED,
+                AdminActivityLogger.TARGET_USER,
+                target.getId(),
+                "%s -> %s".formatted(previousStatus, newStatus));
         return AdminUserResponse.from(target);
     }
 
