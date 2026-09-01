@@ -1,8 +1,14 @@
 package tech.impulso.users.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import tech.impulso.users.entity.Role;
 import tech.impulso.users.entity.User;
+import tech.impulso.users.entity.UserStatus;
 
 import java.util.Optional;
 
@@ -49,4 +55,42 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return {@code true} cuando el nombre de usuario ya está en uso.
      */
     boolean existsByUsername(String username);
+
+    /**
+     * Indica si existe al menos un usuario con el rol suministrado.
+     * Se utiliza durante el arranque para determinar si es necesario
+     * crear el primer administrador.
+     *
+     * @param role rol a verificar.
+     * @return {@code true} cuando existe al menos un usuario con ese rol.
+     */
+    boolean existsByRole(Role role);
+
+    /**
+     * Búsqueda paginada de usuarios para el panel del administrador. Los
+     * parámetros son opcionales: cuando llegan como {@code null} no se
+     * aplica el filtro correspondiente.
+     *
+     * @param search   fragmento a buscar en el correo, el nombre de usuario,
+     *                 el nombre o el apellido (búsqueda insensible a
+     *                 mayúsculas).
+     * @param role     rol al que restringir los resultados.
+     * @param status   estado al que restringir los resultados.
+     * @param pageable configuración de paginación y ordenamiento.
+     * @return página con los usuarios que coinciden con los filtros.
+     */
+    @Query("""
+            select u from User u
+            where (:search is null or
+                   lower(u.email)     like lower(concat('%', :search, '%')) or
+                   lower(u.username)  like lower(concat('%', :search, '%')) or
+                   lower(u.firstName) like lower(concat('%', :search, '%')) or
+                   lower(u.lastName)  like lower(concat('%', :search, '%')))
+              and (:role   is null or u.role   = :role)
+              and (:status is null or u.status = :status)
+            """)
+    Page<User> search(@Param("search") String search,
+                      @Param("role") Role role,
+                      @Param("status") UserStatus status,
+                      Pageable pageable);
 }

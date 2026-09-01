@@ -66,6 +66,10 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: alpha
     tags-sorter: alpha
+  # Renderiza los parámetros de paginación (Pageable) como campos
+  # independientes (page, size, sort) en Swagger UI en lugar de un
+  # único objeto JSON.
+  default-flat-param-object: true
 
 # Configuración específica de la aplicación (namespace propio).
 app:
@@ -80,6 +84,15 @@ app:
     # enviados por correo. Deben apuntar al frontend correspondiente.
     verification-base-url: ${MAIL_VERIFICATION_URL:http://localhost:4200/auth/verify}
     password-reset-base-url: ${MAIL_PASSWORD_RESET_URL:http://localhost:4200/auth/reset-password}
+  admin:
+    # Credenciales utilizadas por AdminBootstrap para crear el primer
+    # administrador si aún no existe ninguno. Deben suministrarse
+    # exclusivamente mediante variables de entorno.
+    email: ${APP_ADMIN_EMAIL:}
+    username: ${APP_ADMIN_USERNAME:}
+    password: ${APP_ADMIN_PASSWORD:}
+    first-name: ${APP_ADMIN_FIRST_NAME:}
+    last-name: ${APP_ADMIN_LAST_NAME:}
 
 # Endpoints de monitoreo expuestos por Spring Boot Actuator.
 management:
