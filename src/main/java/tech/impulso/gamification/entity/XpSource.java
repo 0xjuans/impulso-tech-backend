@@ -15,5 +15,12 @@ public enum XpSource {
     LESSON_COMPLETED,
 
     /** El estudiante completó todas las lecciones obligatorias de un curso. */
-    COURSE_COMPLETED
+    COURSE_COMPLETED,
+
+    /**
+     * El estudiante respondió correctamente una actividad por primera
+     * vez. La cantidad de XP la define el instructor al crear la
+     * actividad.
+     */
+    ACTIVITY_COMPLETED
 }

@@ -65,6 +65,21 @@ public class XpService {
     }
 
     /**
+     * Otorga la experiencia definida por el instructor al responder por
+     * primera vez correctamente una actividad. La cantidad de XP la
+     * suministra el llamador porque cada actividad configura su propia
+     * recompensa.
+     *
+     * @param user       estudiante beneficiado.
+     * @param activityId identificador de la actividad respondida.
+     * @param xpAmount   XP a otorgar; valores no positivos se ignoran.
+     */
+    @Transactional
+    public void awardForActivityCompleted(User user, Long activityId, int xpAmount) {
+        awardIfNew(user, XpSource.ACTIVITY_COMPLETED, activityId, xpAmount);
+    }
+
+    /**
      * Devuelve el estado actual de XP y nivel del usuario. Si aún no
      * existe agregado se crea uno con valores iniciales.
      *
