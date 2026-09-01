@@ -29,5 +29,12 @@ public enum XpSource {
      * entrega de proyecto. La cantidad de XP la define el instructor
      * al crear el proyecto.
      */
-    PROJECT_APPROVED
+    PROJECT_APPROVED,
+
+    /**
+     * El estudiante resolvió correctamente un reto de programación
+     * por primera vez. La cantidad de XP la define el instructor al
+     * crear el reto.
+     */
+    CHALLENGE_SOLVED
 }

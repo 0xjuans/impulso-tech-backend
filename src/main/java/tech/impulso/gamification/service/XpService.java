@@ -98,6 +98,19 @@ public class XpService {
     }
 
     /**
+     * Otorga la experiencia definida por el instructor al aprobar por
+     * primera vez la solución de un reto.
+     *
+     * @param user        estudiante beneficiado.
+     * @param challengeId identificador del reto resuelto.
+     * @param xpAmount    XP a otorgar; valores no positivos se ignoran.
+     */
+    @Transactional
+    public void awardForChallengeSolved(User user, Long challengeId, int xpAmount) {
+        awardIfNew(user, XpSource.CHALLENGE_SOLVED, challengeId, xpAmount);
+    }
+
+    /**
      * Devuelve el estado actual de XP y nivel del usuario. Si aún no
      * existe agregado se crea uno con valores iniciales.
      *
