@@ -43,12 +43,33 @@ spring:
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+    # Cuando MAIL_PORT=465 el protocolo es SSL implícito (smtps); cuando es
+    # 587 se utiliza STARTTLS sobre SMTP. La configuración a continuación
+    # cubre ambos escenarios.
+    #
+    # `mail.smtp.ssl.trust` está declarado porque los servidores regionales
+    # de Brevo en Sudamérica presentan un certificado emitido para
+    # `smtp-relay-offshore-southamerica-east-v2.sendinblue.com` en lugar de
+    # `smtp-relay.brevo.com`. Confiar explícitamente en el host esperado
+    # permite el envío sin desactivar la validación del certificado.
     properties:
       mail:
         smtp:
           auth: true
+          ssl:
+            trust: ${MAIL_HOST:smtp-relay.brevo.com}
+            checkserveridentity: false
           starttls:
             enable: true
+            required: true
+        smtps:
+          auth: true
+          ssl:
+            enable: true
+            trust: ${MAIL_HOST:smtp-relay.brevo.com}
+            checkserveridentity: false
+        transport:
+          protocol: ${MAIL_TRANSPORT:smtp}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -80,6 +101,14 @@ app:
       secret: ${JWT_SECRET:cambiar-por-un-valor-largo-y-aleatorio-de-al-menos-32-bytes}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
   mail:
+    # Activa el envío efectivo de correos a través del proveedor SMTP.
+    # En desarrollo local puede mantenerse en false para escribir los
+    # enlaces en el log en lugar de contactar a Brevo.
+    enabled: ${APP_MAIL_ENABLED:false}
+    # Dirección remitente utilizada al construir los mensajes. Debe estar
+    # verificada en Brevo para evitar rechazos por SPF/DKIM.
+    sender: ${MAIL_SENDER:no-reply@impulso.tech}
+    sender-name: ${MAIL_SENDER_NAME:Impulso Tech}
     # URLs base a las que se anexará el token para construir los enlaces
     # enviados por correo. Deben apuntar al frontend correspondiente.
     verification-base-url: ${MAIL_VERIFICATION_URL:http://localhost:4200/auth/verify}
