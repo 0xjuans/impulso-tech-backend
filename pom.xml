@@ -101,6 +101,18 @@
             <version>4.0.0</version>
         </dependency>
 
+        <!--
+            Cliente oficial de Google para verificar los ID tokens emitidos
+            por Google Identity Services (login con Google, RF-004). Incluye
+            la validación de firma con las claves públicas de Google y la
+            extracción de los claims estándar (email, nombre, foto).
+        -->
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+
         <!-- Generación y validación de tokens JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

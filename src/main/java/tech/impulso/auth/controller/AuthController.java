@@ -16,12 +16,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tech.impulso.auth.dto.AuthResponse;
 import tech.impulso.auth.dto.ForgotPasswordRequest;
+import tech.impulso.auth.dto.GoogleLoginRequest;
 import tech.impulso.auth.dto.LoginRequest;
 import tech.impulso.auth.dto.MessageResponse;
 import tech.impulso.auth.dto.RegisterRequest;
 import tech.impulso.auth.dto.ResetPasswordRequest;
 import tech.impulso.auth.dto.UserResponse;
 import tech.impulso.auth.service.AuthService;
+import tech.impulso.auth.service.GoogleAuthService;
 
 /**
  * Controlador REST que expone las operaciones de autenticación de
@@ -39,9 +41,11 @@ import tech.impulso.auth.service.AuthService;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleAuthService googleAuthService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GoogleAuthService googleAuthService) {
         this.authService = authService;
+        this.googleAuthService = googleAuthService;
     }
 
     /**
@@ -101,6 +105,20 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    /**
+     * Autentica al usuario mediante Google Identity Services y devuelve
+     * el token JWT propio.
+     *
+     * @param request contiene el ID token generado por Google.
+     * @return token de acceso y datos del usuario autenticado.
+     */
+    @Operation(summary = "Iniciar sesión con Google",
+            description = "Verifica el ID token de Google y emite el token JWT propio. Crea la cuenta automáticamente si aún no existe.")
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+        return ResponseEntity.ok(googleAuthService.loginWithGoogle(request.idToken()));
     }
 
     /**

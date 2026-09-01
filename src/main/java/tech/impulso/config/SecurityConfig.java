@@ -39,6 +39,7 @@ public class SecurityConfig {
             "/actuator/health",
             "/api/auth/register",
             "/api/auth/login",
+            "/api/auth/google",
             "/api/auth/verify",
             "/api/auth/verify/resend",
             "/api/auth/password/forgot",

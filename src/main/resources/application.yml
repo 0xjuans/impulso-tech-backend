@@ -100,6 +100,12 @@ app:
       # En dev existe un valor por defecto seguro para desarrollo local.
       secret: ${JWT_SECRET:cambiar-por-un-valor-largo-y-aleatorio-de-al-menos-32-bytes}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+    google:
+      # Identificador de cliente OAuth 2.0 emitido por Google Cloud Console
+      # (Credenciales → Cliente OAuth 2.0 → Tipo "Web application"). El
+      # backend lo utiliza como audiencia esperada al verificar los ID tokens
+      # generados por el frontend con Google Identity Services.
+      client-id: ${GOOGLE_CLIENT_ID:}
   mail:
     # Activa el envío efectivo de correos a través del proveedor SMTP.
     # En desarrollo local puede mantenerse en false para escribir los
