@@ -87,6 +87,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Maneja las excepciones de negocio controladas por la aplicación.
+     * Utiliza el código HTTP definido en la propia excepción para
+     * mantener la coherencia entre la regla violada y la respuesta.
+     *
+     * @param ex      excepción de negocio.
+     * @param request petición HTTP asociada.
+     * @return respuesta con el código y mensaje configurados en la excepción.
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiError> handleBusiness(BusinessException ex, HttpServletRequest request) {
+        return build(ex.getStatus(), ex.getMessage(), request, null);
+    }
+
+    /**
      * Manejador de último recurso para cualquier excepción no controlada.
      * Registra la excepción en el log del servidor y devuelve un mensaje
      * genérico al cliente.

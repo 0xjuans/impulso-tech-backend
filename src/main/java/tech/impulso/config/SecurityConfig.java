@@ -2,48 +2,56 @@ package tech.impulso.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import tech.impulso.auth.filter.JwtAuthenticationFilter;
 
 /**
  * Configuración base de seguridad de la aplicación.
  *
- * <p>Esta configuración inicial deja abiertos únicamente los recursos
- * públicos necesarios durante el bootstrap del proyecto (documentación
- * de la API, health check y endpoints de autenticación). El resto de los
- * endpoints exigen autenticación. Los filtros de JWT, la integración con
- * Google OAuth 2.0 y la autorización granular por rol se incorporarán en
- * el módulo {@code auth} en etapas posteriores.</p>
+ * <p>Define el comportamiento stateless de la API, delega la
+ * autenticación de las peticiones al {@link JwtAuthenticationFilter}
+ * y protege todos los endpoints por defecto, exceptuando los recursos
+ * públicos necesarios (documentación de la API, health check y flujos
+ * de autenticación).</p>
  *
- * <p>La aplicación opera de forma stateless para adecuarse al modelo de
- * API REST y evitar la creación de sesiones HTTP en el servidor.</p>
+ * <p>La autorización granular por rol se aplica de forma declarativa a
+ * nivel de controlador mediante anotaciones {@code @PreAuthorize} en los
+ * módulos correspondientes.</p>
  */
 @Configuration
 public class SecurityConfig {
 
-    /**
-     * Rutas públicas que no requieren autenticación durante esta etapa
-     * del proyecto. Se limitan a la documentación de la API, al monitoreo
-     * básico y a los endpoints de autenticación que se implementarán a
-     * continuación.
-     */
     private static final String[] PUBLIC_ENDPOINTS = {
             "/v3/api-docs/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/actuator/health",
-            "/api/auth/**"
+            "/api/auth/register",
+            "/api/auth/login",
+            "/api/auth/verify",
+            "/api/auth/verify/resend",
+            "/api/auth/password/forgot",
+            "/api/auth/password/reset"
     };
 
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
     /**
-     * Define la cadena de filtros de seguridad HTTP aplicada a todas las
-     * peticiones. Deshabilita CSRF por tratarse de una API REST stateless,
-     * abre los recursos públicos definidos y exige autenticación para el
-     * resto de los endpoints.
+     * Define la cadena de filtros de seguridad aplicada a las peticiones
+     * HTTP.
      *
      * @param http constructor de la configuración de seguridad HTTP.
      * @return la cadena de filtros de seguridad resultante.
@@ -55,10 +63,26 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated());
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Expone el {@link AuthenticationManager} configurado por Spring
+     * Security para que pueda inyectarse en los flujos personalizados
+     * (por ejemplo, integraciones con OAuth 2.0 en fases posteriores).
+     *
+     * @param configuration configuración de autenticación de Spring.
+     * @return el gestor de autenticación resultante.
+     * @throws Exception si Spring no puede construirlo.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
     /**

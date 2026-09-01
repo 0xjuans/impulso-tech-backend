@@ -67,6 +67,20 @@ springdoc:
     operations-sorter: alpha
     tags-sorter: alpha
 
+# Configuración específica de la aplicación (namespace propio).
+app:
+  security:
+    jwt:
+      # El valor real debe suministrarse mediante variable de entorno JWT_SECRET.
+      # En dev existe un valor por defecto seguro para desarrollo local.
+      secret: ${JWT_SECRET:cambiar-por-un-valor-largo-y-aleatorio-de-al-menos-32-bytes}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
+  mail:
+    # URLs base a las que se anexará el token para construir los enlaces
+    # enviados por correo. Deben apuntar al frontend correspondiente.
+    verification-base-url: ${MAIL_VERIFICATION_URL:http://localhost:4200/auth/verify}
+    password-reset-base-url: ${MAIL_PASSWORD_RESET_URL:http://localhost:4200/auth/reset-password}
+
 # Endpoints de monitoreo expuestos por Spring Boot Actuator.
 management:
   endpoints:
