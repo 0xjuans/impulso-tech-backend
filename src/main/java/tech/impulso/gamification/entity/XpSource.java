@@ -22,5 +22,12 @@ public enum XpSource {
      * vez. La cantidad de XP la define el instructor al crear la
      * actividad.
      */
-    ACTIVITY_COMPLETED
+    ACTIVITY_COMPLETED,
+
+    /**
+     * El estudiante recibió por primera vez la aprobación de una
+     * entrega de proyecto. La cantidad de XP la define el instructor
+     * al crear el proyecto.
+     */
+    PROJECT_APPROVED
 }

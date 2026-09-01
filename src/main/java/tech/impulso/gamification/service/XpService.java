@@ -85,6 +85,19 @@ public class XpService {
     }
 
     /**
+     * Otorga la experiencia definida por el instructor al aprobar por
+     * primera vez una entrega del proyecto indicado.
+     *
+     * @param user      estudiante beneficiado.
+     * @param projectId identificador del proyecto aprobado.
+     * @param xpAmount  XP a otorgar; valores no positivos se ignoran.
+     */
+    @Transactional
+    public void awardForProjectApproved(User user, Long projectId, int xpAmount) {
+        awardIfNew(user, XpSource.PROJECT_APPROVED, projectId, xpAmount);
+    }
+
+    /**
      * Devuelve el estado actual de XP y nivel del usuario. Si aún no
      * existe agregado se crea uno con valores iniciales.
      *
