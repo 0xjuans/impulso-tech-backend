@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 import tech.impulso.admin.dto.PagedResponse;
 import tech.impulso.common.content.ContentStatus;
 import tech.impulso.common.content.DifficultyLevel;
+import tech.impulso.common.content.dto.UpdateContentStatusRequest;
 import tech.impulso.learningroutes.dto.CreateLearningRouteRequest;
 import tech.impulso.learningroutes.dto.LearningRouteResponse;
-import tech.impulso.learningroutes.dto.UpdateContentStatusRequest;
 import tech.impulso.learningroutes.dto.UpdateLearningRouteRequest;
 import tech.impulso.learningroutes.service.LearningRouteService;
 
