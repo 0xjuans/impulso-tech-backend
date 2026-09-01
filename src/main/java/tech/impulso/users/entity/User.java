@@ -83,6 +83,14 @@ public class User {
     private UserStatus status;
 
     /**
+     * Indica si el usuario acepta aparecer en los rankings públicos
+     * (RF-021). Cuando es {@code false}, sus estadísticas se siguen
+     * registrando pero no se exponen en las listas de clasificación.
+     */
+    @Column(name = "show_in_ranking", nullable = false)
+    private boolean showInRanking = true;
+
+    /**
      * Fecha y hora en que el usuario confirmó su correo electrónico. Es
      * nulo mientras la cuenta se encuentre en estado
      * {@link UserStatus#PENDIENTE_VERIFICACION}.
@@ -192,6 +200,14 @@ public class User {
 
     public void setStatus(UserStatus status) {
         this.status = status;
+    }
+
+    public boolean isShowInRanking() {
+        return showInRanking;
+    }
+
+    public void setShowInRanking(boolean showInRanking) {
+        this.showInRanking = showInRanking;
     }
 
     public OffsetDateTime getEmailVerifiedAt() {

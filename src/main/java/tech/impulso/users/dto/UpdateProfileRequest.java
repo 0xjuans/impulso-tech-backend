@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Size;
  * @param firstName       nuevo nombre real.
  * @param lastName        nuevo apellido real.
  * @param profilePhotoUrl nueva URL pública de la foto de perfil.
+ * @param showInRanking   preferencia de visibilidad pública en los rankings.
  */
 public record UpdateProfileRequest(
         @Size(min = 3, max = 60, message = "El nombre de usuario debe tener entre 3 y 60 caracteres.")
@@ -29,6 +30,8 @@ public record UpdateProfileRequest(
         String lastName,
 
         @Size(max = 500, message = "La URL de la foto de perfil no puede superar los 500 caracteres.")
-        String profilePhotoUrl
+        String profilePhotoUrl,
+
+        Boolean showInRanking
 ) {
 }

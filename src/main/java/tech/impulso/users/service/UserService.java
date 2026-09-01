@@ -76,6 +76,9 @@ public class UserService {
             String url = request.profilePhotoUrl().trim();
             user.setProfilePhotoUrl(url.isEmpty() ? null : url);
         }
+        if (request.showInRanking() != null) {
+            user.setShowInRanking(request.showInRanking());
+        }
 
         userRepository.save(user);
         return UserResponse.from(user);
