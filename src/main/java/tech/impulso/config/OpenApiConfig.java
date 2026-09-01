@@ -1,9 +1,11 @@
 package tech.impulso.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,9 +30,18 @@ public class OpenApiConfig {
      * @return la configuración de OpenAPI utilizada por Springdoc para
      *         generar el esquema y la interfaz de Swagger UI.
      */
+    /** Nombre del esquema de seguridad utilizado por los endpoints protegidos. */
+    private static final String BEARER_SCHEME_NAME = "bearerAuth";
+
     @Bean
     public OpenAPI impulsoTechOpenAPI() {
         return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes(BEARER_SCHEME_NAME, new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("Token JWT emitido por el endpoint de inicio de sesión.")))
                 .info(new Info()
                         .title("Impulso Tech API")
                         .description("API REST del backend de Impulso Tech, plataforma web para el aprendizaje de programación.")
