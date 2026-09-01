@@ -90,6 +90,17 @@
             <optional>true</optional>
         </dependency>
 
+        <!--
+            Carga automática de variables desde un archivo .env en la raíz
+            del proyecto durante el arranque. Facilita el desarrollo local
+            sin necesidad de configurar las variables en el sistema o el IDE.
+        -->
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>spring-dotenv</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
         <!-- Generación y validación de tokens JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
