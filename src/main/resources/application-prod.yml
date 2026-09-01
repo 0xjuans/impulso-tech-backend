@@ -1,0 +1,21 @@
+# -----------------------------------------------------------------------------
+# Perfil de producción.
+#
+# Todos los valores sensibles se toman exclusivamente de variables de entorno
+# gestionadas por el proveedor de despliegue (Render, Neon, Upstash, Brevo).
+# La documentación de la API se restringe según las políticas de seguridad.
+# -----------------------------------------------------------------------------
+spring:
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    tech.impulso: INFO
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

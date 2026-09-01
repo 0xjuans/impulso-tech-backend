@@ -1,0 +1,29 @@
+# -----------------------------------------------------------------------------
+# Perfil utilizado por las pruebas automatizadas.
+#
+# Se apoya en una base de datos PostgreSQL local o en la definida por variables
+# de entorno del entorno de CI. Redis y correo pueden apuntar a instancias
+# locales o de prueba.
+# -----------------------------------------------------------------------------
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/impulso_tech_test}
+    username: ${DATABASE_USERNAME:impulso}
+    password: ${DATABASE_PASSWORD:impulso}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+
+logging:
+  level:
+    root: WARN
+    tech.impulso: INFO

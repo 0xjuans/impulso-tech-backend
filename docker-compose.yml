@@ -1,0 +1,50 @@
+# -----------------------------------------------------------------------------
+# Servicios locales para el desarrollo del backend de Impulso Tech.
+#
+# Levanta PostgreSQL (base de datos principal) y Redis (caché y datos
+# temporales) en instancias aisladas para no depender de los servicios
+# administrados durante el desarrollo local.
+#
+# Uso:
+#   docker compose up -d       # arranca los servicios en segundo plano
+#   docker compose down        # detiene y elimina los contenedores
+#   docker compose down -v     # además elimina los volúmenes persistentes
+# -----------------------------------------------------------------------------
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: impulso-tech-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: impulso_tech
+      POSTGRES_USER: impulso
+      POSTGRES_PASSWORD: impulso
+    ports:
+      # Se expone en 15432 en el host para evitar conflicto con instalaciones
+      # nativas de PostgreSQL que ya utilicen los puertos 5432 y 5433.
+      - "15432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U impulso -d impulso_tech"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: impulso-tech-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  redis-data:

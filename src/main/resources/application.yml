@@ -1,0 +1,78 @@
+# -----------------------------------------------------------------------------
+# Configuración base de Impulso Tech Backend
+#
+# Este archivo contiene la configuración común a todos los entornos.
+# Los perfiles específicos (dev, prod) sobreescriben únicamente lo necesario.
+# Los valores sensibles se resuelven mediante variables de entorno.
+# -----------------------------------------------------------------------------
+spring:
+  application:
+    name: impulso-tech-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # Las migraciones de esquema se gestionan exclusivamente mediante Flyway,
+      # por lo que Hibernate no debe modificar la estructura de la base de datos.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+
+  mail:
+    host: ${MAIL_HOST:smtp-relay.brevo.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    # Evitamos exponer trazas y detalles internos en las respuestas de error.
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+# Configuración de la documentación OpenAPI + Swagger UI.
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+# Endpoints de monitoreo expuestos por Spring Boot Actuator.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
