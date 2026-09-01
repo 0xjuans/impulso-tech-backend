@@ -4,11 +4,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.impulso.gamification.entity.UserStreak;
 import tech.impulso.gamification.repository.UserStreakRepository;
+import tech.impulso.notifications.entity.NotificationType;
+import tech.impulso.notifications.service.NotificationService;
 import tech.impulso.users.entity.User;
 
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 
 /**
  * Servicio responsable de mantener la racha de aprendizaje de cada
@@ -31,10 +34,19 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class StreakService {
 
-    private final UserStreakRepository repository;
+    /**
+     * Hitos de racha que disparan una notificación motivacional al
+     * estudiante cuando los alcanza por primera vez.
+     */
+    private static final Set<Integer> MILESTONES = Set.of(3, 7, 14, 30, 60, 100);
 
-    public StreakService(UserStreakRepository repository) {
+    private final UserStreakRepository repository;
+    private final NotificationService notificationService;
+
+    public StreakService(UserStreakRepository repository,
+                         NotificationService notificationService) {
         this.repository = repository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -68,10 +80,27 @@ public class StreakService {
         }
 
         streak.setLastActivityDate(today);
+        int previousLongest = streak.getLongestStreak();
         if (streak.getCurrentStreak() > streak.getLongestStreak()) {
             streak.setLongestStreak(streak.getCurrentStreak());
         }
-        return repository.save(streak);
+        UserStreak saved = repository.save(streak);
+
+        // Notificamos únicamente cuando el hito se alcanza por primera
+        // vez, es decir, cuando la racha actual supera el récord anterior.
+        if (MILESTONES.contains(saved.getCurrentStreak())
+                && saved.getCurrentStreak() > previousLongest) {
+            notificationService.notify(
+                    user,
+                    NotificationType.STREAK_MILESTONE,
+                    "¡Racha de %d días!".formatted(saved.getCurrentStreak()),
+                    "Alcanzaste una racha de %d días consecutivos aprendiendo. ¡Sigue así!"
+                            .formatted(saved.getCurrentStreak()),
+                    "USER",
+                    user.getId()
+            );
+        }
+        return saved;
     }
 
     /**

@@ -21,6 +21,8 @@ import tech.impulso.enrollments.repository.LessonCompletionRepository;
 import tech.impulso.gamification.service.BadgeService;
 import tech.impulso.gamification.service.StreakService;
 import tech.impulso.gamification.service.XpService;
+import tech.impulso.notifications.entity.NotificationType;
+import tech.impulso.notifications.service.NotificationService;
 import tech.impulso.lessons.entity.Lesson;
 import tech.impulso.lessons.repository.LessonRepository;
 import tech.impulso.users.entity.User;
@@ -49,6 +51,7 @@ public class EnrollmentService {
     private final XpService xpService;
     private final StreakService streakService;
     private final BadgeService badgeService;
+    private final NotificationService notificationService;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              LessonCompletionRepository completionRepository,
@@ -57,7 +60,8 @@ public class EnrollmentService {
                              CurrentUserService currentUserService,
                              XpService xpService,
                              StreakService streakService,
-                             BadgeService badgeService) {
+                             BadgeService badgeService,
+                             NotificationService notificationService) {
         this.enrollmentRepository = enrollmentRepository;
         this.completionRepository = completionRepository;
         this.lessonRepository = lessonRepository;
@@ -66,6 +70,7 @@ public class EnrollmentService {
         this.xpService = xpService;
         this.streakService = streakService;
         this.badgeService = badgeService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -152,10 +157,18 @@ public class EnrollmentService {
             xpService.awardForLessonCompleted(user, lessonId);
         }
         // Si el curso acaba de finalizar durante esta operación, otorgamos
-        // adicionalmente la XP por finalización.
+        // adicionalmente la XP por finalización y notificamos al estudiante.
         if (previousStatus != EnrollmentStatus.COMPLETADO
                 && enrollment.getStatus() == EnrollmentStatus.COMPLETADO) {
             xpService.awardForCourseCompleted(user, course.getId());
+            notificationService.notify(
+                    user,
+                    NotificationType.COURSE_COMPLETED,
+                    "¡Curso completado!",
+                    "Completaste el curso \"%s\". Felicidades por tu progreso.".formatted(course.getName()),
+                    "COURSE",
+                    course.getId()
+            );
         }
         // Cualquier lección completada (incluso opcional o repetida) cuenta
         // como actividad válida para efectos de la racha de aprendizaje.

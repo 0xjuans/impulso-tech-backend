@@ -26,6 +26,8 @@ import tech.impulso.evaluations.repository.EvaluationQuestionRepository;
 import tech.impulso.evaluations.repository.EvaluationRepository;
 import tech.impulso.lessons.entity.Lesson;
 import tech.impulso.lessons.repository.LessonRepository;
+import tech.impulso.notifications.entity.NotificationType;
+import tech.impulso.notifications.service.NotificationService;
 import tech.impulso.users.entity.Role;
 import tech.impulso.users.entity.User;
 
@@ -53,6 +55,7 @@ public class EvaluationService {
     private final ActivityGrader grader;
     private final ObjectMapper objectMapper;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
     public EvaluationService(EvaluationRepository evaluationRepository,
                              EvaluationQuestionRepository questionRepository,
@@ -60,7 +63,8 @@ public class EvaluationService {
                              LessonRepository lessonRepository,
                              ActivityGrader grader,
                              ObjectMapper objectMapper,
-                             CurrentUserService currentUserService) {
+                             CurrentUserService currentUserService,
+                             NotificationService notificationService) {
         this.evaluationRepository = evaluationRepository;
         this.questionRepository = questionRepository;
         this.attemptRepository = attemptRepository;
@@ -68,6 +72,7 @@ public class EvaluationService {
         this.grader = grader;
         this.objectMapper = objectMapper;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -318,7 +323,31 @@ public class EvaluationService {
             }
         }
 
-        return EvaluationAttemptResponse.from(attemptRepository.save(attempt));
+        EvaluationAttempt saved = attemptRepository.save(attempt);
+
+        // Notificamos al estudiante el resultado obtenido.
+        if (saved.isPassed()) {
+            notificationService.notify(
+                    user,
+                    NotificationType.EVALUATION_PASSED,
+                    "Aprobaste: %s".formatted(evaluation.getName()),
+                    "Obtuviste el %d%% en la evaluación \"%s\". ¡Excelente trabajo!"
+                            .formatted(saved.getPercentage(), evaluation.getName()),
+                    "EVALUATION",
+                    evaluation.getId()
+            );
+        } else {
+            notificationService.notify(
+                    user,
+                    NotificationType.EVALUATION_FAILED,
+                    "Resultado: %s".formatted(evaluation.getName()),
+                    "Obtuviste el %d%% en la evaluación \"%s\". Puedes revisar el contenido e intentarlo nuevamente."
+                            .formatted(saved.getPercentage(), evaluation.getName()),
+                    "EVALUATION",
+                    evaluation.getId()
+            );
+        }
+        return EvaluationAttemptResponse.from(saved);
     }
 
     /**

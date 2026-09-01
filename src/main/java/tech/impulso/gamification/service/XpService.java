@@ -8,6 +8,8 @@ import tech.impulso.gamification.entity.XpEvent;
 import tech.impulso.gamification.entity.XpSource;
 import tech.impulso.gamification.repository.UserXpRepository;
 import tech.impulso.gamification.repository.XpEventRepository;
+import tech.impulso.notifications.entity.NotificationType;
+import tech.impulso.notifications.service.NotificationService;
 import tech.impulso.users.entity.User;
 
 /**
@@ -25,6 +27,7 @@ public class XpService {
 
     private final UserXpRepository userXpRepository;
     private final XpEventRepository xpEventRepository;
+    private final NotificationService notificationService;
 
     private final int lessonCompletedXp;
     private final int courseCompletedXp;
@@ -32,11 +35,13 @@ public class XpService {
 
     public XpService(UserXpRepository userXpRepository,
                      XpEventRepository xpEventRepository,
+                     NotificationService notificationService,
                      @Value("${app.gamification.xp.lesson-completed:10}") int lessonCompletedXp,
                      @Value("${app.gamification.xp.course-completed:200}") int courseCompletedXp,
                      @Value("${app.gamification.xp.per-level:100}") int xpPerLevel) {
         this.userXpRepository = userXpRepository;
         this.xpEventRepository = xpEventRepository;
+        this.notificationService = notificationService;
         this.lessonCompletedXp = lessonCompletedXp;
         this.courseCompletedXp = courseCompletedXp;
         this.xpPerLevel = Math.max(1, xpPerLevel);
@@ -120,9 +125,22 @@ public class XpService {
 
         UserXp aggregate = userXpRepository.findById(user.getId())
                 .orElseGet(() -> createInitial(user));
+        int previousLevel = aggregate.getCurrentLevel();
         aggregate.setTotalXp(aggregate.getTotalXp() + xpAmount);
-        aggregate.setCurrentLevel(computeLevel(aggregate.getTotalXp()));
+        int newLevel = computeLevel(aggregate.getTotalXp());
+        aggregate.setCurrentLevel(newLevel);
         userXpRepository.save(aggregate);
+
+        if (newLevel > previousLevel) {
+            notificationService.notify(
+                    user,
+                    NotificationType.LEVEL_UP,
+                    "¡Subiste de nivel!",
+                    "Alcanzaste el nivel %d en Impulso Tech.".formatted(newLevel),
+                    "USER",
+                    user.getId()
+            );
+        }
     }
 
     /**

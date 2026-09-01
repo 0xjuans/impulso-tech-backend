@@ -14,6 +14,8 @@ import tech.impulso.gamification.repository.BadgeRepository;
 import tech.impulso.gamification.repository.UserBadgeRepository;
 import tech.impulso.gamification.repository.UserStreakRepository;
 import tech.impulso.gamification.repository.UserXpRepository;
+import tech.impulso.notifications.entity.NotificationType;
+import tech.impulso.notifications.service.NotificationService;
 import tech.impulso.users.entity.User;
 
 import java.util.ArrayList;
@@ -43,19 +45,22 @@ public class BadgeService {
     private final EnrollmentRepository enrollmentRepository;
     private final UserXpRepository userXpRepository;
     private final UserStreakRepository userStreakRepository;
+    private final NotificationService notificationService;
 
     public BadgeService(BadgeRepository badgeRepository,
                         UserBadgeRepository userBadgeRepository,
                         LessonCompletionRepository lessonCompletionRepository,
                         EnrollmentRepository enrollmentRepository,
                         UserXpRepository userXpRepository,
-                        UserStreakRepository userStreakRepository) {
+                        UserStreakRepository userStreakRepository,
+                        NotificationService notificationService) {
         this.badgeRepository = badgeRepository;
         this.userBadgeRepository = userBadgeRepository;
         this.lessonCompletionRepository = lessonCompletionRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.userXpRepository = userXpRepository;
         this.userStreakRepository = userStreakRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -84,6 +89,14 @@ public class BadgeService {
                 userBadge.setUser(user);
                 userBadge.setBadge(badge);
                 awarded.add(userBadgeRepository.save(userBadge));
+                notificationService.notify(
+                        user,
+                        NotificationType.BADGE_AWARDED,
+                        "Nueva insignia: %s".formatted(badge.getName()),
+                        badge.getDescription(),
+                        "BADGE",
+                        badge.getId()
+                );
             }
         }
         return awarded;
