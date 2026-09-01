@@ -18,6 +18,7 @@ import tech.impulso.enrollments.entity.EnrollmentStatus;
 import tech.impulso.enrollments.entity.LessonCompletion;
 import tech.impulso.enrollments.repository.EnrollmentRepository;
 import tech.impulso.enrollments.repository.LessonCompletionRepository;
+import tech.impulso.gamification.service.StreakService;
 import tech.impulso.gamification.service.XpService;
 import tech.impulso.lessons.entity.Lesson;
 import tech.impulso.lessons.repository.LessonRepository;
@@ -45,19 +46,22 @@ public class EnrollmentService {
     private final CourseRepository courseRepository;
     private final CurrentUserService currentUserService;
     private final XpService xpService;
+    private final StreakService streakService;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              LessonCompletionRepository completionRepository,
                              LessonRepository lessonRepository,
                              CourseRepository courseRepository,
                              CurrentUserService currentUserService,
-                             XpService xpService) {
+                             XpService xpService,
+                             StreakService streakService) {
         this.enrollmentRepository = enrollmentRepository;
         this.completionRepository = completionRepository;
         this.lessonRepository = lessonRepository;
         this.courseRepository = courseRepository;
         this.currentUserService = currentUserService;
         this.xpService = xpService;
+        this.streakService = streakService;
     }
 
     /**
@@ -149,6 +153,9 @@ public class EnrollmentService {
                 && enrollment.getStatus() == EnrollmentStatus.COMPLETADO) {
             xpService.awardForCourseCompleted(user, course.getId());
         }
+        // Cualquier lección completada (incluso opcional o repetida) cuenta
+        // como actividad válida para efectos de la racha de aprendizaje.
+        streakService.registerActivity(user);
 
         return buildProgress(enrollment, course);
     }
