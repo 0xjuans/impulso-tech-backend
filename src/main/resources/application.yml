@@ -93,6 +93,14 @@ app:
     password: ${APP_ADMIN_PASSWORD:}
     first-name: ${APP_ADMIN_FIRST_NAME:}
     last-name: ${APP_ADMIN_LAST_NAME:}
+  gamification:
+    xp:
+      # Puntos de experiencia otorgados por cada evento de aprendizaje.
+      # Se pueden ajustar sin necesidad de recompilar la aplicación.
+      lesson-completed: ${APP_XP_LESSON_COMPLETED:10}
+      course-completed: ${APP_XP_COURSE_COMPLETED:200}
+      # Cantidad de XP necesaria para avanzar de nivel (progresión lineal).
+      per-level: ${APP_XP_PER_LEVEL:100}
 
 # Endpoints de monitoreo expuestos por Spring Boot Actuator.
 management:

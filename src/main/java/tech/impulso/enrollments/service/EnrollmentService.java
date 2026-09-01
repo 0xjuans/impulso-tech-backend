@@ -18,6 +18,7 @@ import tech.impulso.enrollments.entity.EnrollmentStatus;
 import tech.impulso.enrollments.entity.LessonCompletion;
 import tech.impulso.enrollments.repository.EnrollmentRepository;
 import tech.impulso.enrollments.repository.LessonCompletionRepository;
+import tech.impulso.gamification.service.XpService;
 import tech.impulso.lessons.entity.Lesson;
 import tech.impulso.lessons.repository.LessonRepository;
 import tech.impulso.users.entity.User;
@@ -43,17 +44,20 @@ public class EnrollmentService {
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
     private final CurrentUserService currentUserService;
+    private final XpService xpService;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              LessonCompletionRepository completionRepository,
                              LessonRepository lessonRepository,
                              CourseRepository courseRepository,
-                             CurrentUserService currentUserService) {
+                             CurrentUserService currentUserService,
+                             XpService xpService) {
         this.enrollmentRepository = enrollmentRepository;
         this.completionRepository = completionRepository;
         this.lessonRepository = lessonRepository;
         this.courseRepository = courseRepository;
         this.currentUserService = currentUserService;
+        this.xpService = xpService;
     }
 
     /**
@@ -121,15 +125,30 @@ public class EnrollmentService {
                 .orElseThrow(() -> new BusinessException(HttpStatus.CONFLICT,
                         "Debe inscribirse en el curso antes de completar sus lecciones."));
 
+        boolean firstTimeCompleted = false;
         if (!completionRepository.existsByUserIdAndLessonId(user.getId(), lessonId)) {
             LessonCompletion completion = new LessonCompletion();
             completion.setUser(user);
             completion.setLesson(lesson);
             completionRepository.save(completion);
+            firstTimeCompleted = true;
         }
 
+        EnrollmentStatus previousStatus = enrollment.getStatus();
         refreshEnrollmentStatus(enrollment, course.getId());
         enrollmentRepository.save(enrollment);
+
+        // Otorgamos XP únicamente cuando el evento es nuevo, para
+        // respetar la regla de recompensa única por lección (RF-018).
+        if (firstTimeCompleted && !lesson.isOptional()) {
+            xpService.awardForLessonCompleted(user, lessonId);
+        }
+        // Si el curso acaba de finalizar durante esta operación, otorgamos
+        // adicionalmente la XP por finalización.
+        if (previousStatus != EnrollmentStatus.COMPLETADO
+                && enrollment.getStatus() == EnrollmentStatus.COMPLETADO) {
+            xpService.awardForCourseCompleted(user, course.getId());
+        }
 
         return buildProgress(enrollment, course);
     }
