@@ -4,13 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -84,6 +87,47 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, "No cuenta con permisos para acceder a este recurso.", request, null);
+    }
+
+    /**
+     * Maneja los errores de conversión de parámetros de consulta (por
+     * ejemplo, un valor que no corresponde a un enum válido).
+     *
+     * @param ex      excepción de conversión.
+     * @param request petición HTTP asociada.
+     * @return respuesta con código 400 y el nombre del parámetro afectado.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        String message = "El parámetro '%s' no acepta el valor suministrado.".formatted(ex.getName());
+        return build(HttpStatus.BAD_REQUEST, message, request, null);
+    }
+
+    /**
+     * Maneja los intentos de ordenamiento sobre propiedades inexistentes
+     * en la entidad consultada (por ejemplo, {@code sort=noExiste} o el
+     * placeholder de Swagger {@code sort=["string"]}).
+     *
+     * @param ex      excepción originada por Spring Data.
+     * @param request petición HTTP asociada.
+     * @return respuesta con código 400 y mensaje descriptivo.
+     */
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ApiError> handlePropertyReference(PropertyReferenceException ex, HttpServletRequest request) {
+        String message = "La propiedad '%s' utilizada para ordenar no existe.".formatted(ex.getPropertyName());
+        return build(HttpStatus.BAD_REQUEST, message, request, null);
+    }
+
+    /**
+     * Maneja los cuerpos JSON malformados o con tipos que no coinciden.
+     *
+     * @param ex      excepción de lectura del cuerpo HTTP.
+     * @param request petición HTTP asociada.
+     * @return respuesta con código 400 y mensaje genérico.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableBody(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "El cuerpo de la solicitud no es válido o está mal formado.", request, null);
     }
 
     /**
