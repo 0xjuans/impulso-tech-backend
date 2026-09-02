@@ -61,4 +61,19 @@ public interface ChallengeAttemptRepository extends JpaRepository<ChallengeAttem
             """)
     boolean hasApprovedAttempt(@Param("userId") Long userId,
                                @Param("challengeId") Long challengeId);
+
+    /**
+     * Cuenta cuántos retos distintos ha resuelto correctamente el
+     * estudiante en toda la plataforma. Se utiliza en el panel de
+     * progreso.
+     *
+     * @param userId identificador del estudiante.
+     * @return cantidad de retos aprobados (distintos).
+     */
+    @Query("""
+            select count(distinct a.challenge.id) from ChallengeAttempt a
+            where a.user.id = :userId
+              and a.status = tech.impulso.challenges.entity.ChallengeAttemptStatus.APROBADO
+            """)
+    long countDistinctSolvedChallenges(@Param("userId") Long userId);
 }

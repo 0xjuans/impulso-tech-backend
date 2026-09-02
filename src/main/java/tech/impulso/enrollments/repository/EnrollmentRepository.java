@@ -44,4 +44,13 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      * @return cantidad de inscripciones en ese estado.
      */
     long countByUserIdAndStatus(Long userId, EnrollmentStatus status);
+
+    /**
+     * Cuenta el total de inscripciones activas del usuario, sin filtrar
+     * por estado. Se utiliza como métrica en el panel de progreso.
+     *
+     * @param userId identificador del usuario.
+     * @return cantidad total de inscripciones.
+     */
+    long countByUserId(Long userId);
 }

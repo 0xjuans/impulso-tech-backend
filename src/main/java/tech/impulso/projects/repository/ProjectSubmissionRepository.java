@@ -78,4 +78,18 @@ public interface ProjectSubmissionRepository extends JpaRepository<ProjectSubmis
             """)
     boolean hasApprovedSubmission(@Param("userId") Long userId,
                                   @Param("projectId") Long projectId);
+
+    /**
+     * Cuenta cuántos proyectos distintos ha aprobado el estudiante en
+     * toda la plataforma. Se utiliza en el panel de progreso.
+     *
+     * @param userId identificador del estudiante.
+     * @return cantidad de proyectos aprobados (distintos).
+     */
+    @Query("""
+            select count(distinct s.project.id) from ProjectSubmission s
+            where s.user.id = :userId
+              and s.status = tech.impulso.projects.entity.ProjectSubmissionStatus.APROBADA
+            """)
+    long countDistinctApprovedProjects(@Param("userId") Long userId);
 }
