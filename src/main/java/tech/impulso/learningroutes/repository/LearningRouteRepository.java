@@ -40,4 +40,30 @@ public interface LearningRouteRepository extends JpaRepository<LearningRoute, Lo
                                @Param("difficulty") DifficultyLevel difficulty,
                                @Param("status") ContentStatus status,
                                Pageable pageable);
+
+    /**
+     * Búsqueda global de rutas de aprendizaje por coincidencia de texto
+     * en nombre o descripción, respetando la visibilidad del solicitante
+     * (RF-035).
+     *
+     * @param q          fragmento a buscar (nunca nulo, ya normalizado).
+     * @param ownerId    identificador del instructor solicitante, o nulo.
+     * @param includeAll indica si se deben incluir rutas en cualquier estado.
+     * @param pageable   configuración de paginación.
+     * @return página con las rutas coincidentes.
+     */
+    @Query("""
+            select r from LearningRoute r
+            where (lower(r.name)        like lower(concat('%', :q, '%')) or
+                   lower(r.description) like lower(concat('%', :q, '%')))
+              and (
+                    :includeAll = true
+                 or r.status = tech.impulso.common.content.ContentStatus.PUBLICADO
+                 or (:ownerId is not null and r.instructor.id = :ownerId)
+              )
+            """)
+    Page<LearningRoute> globalSearch(@Param("q") String q,
+                                     @Param("ownerId") Long ownerId,
+                                     @Param("includeAll") boolean includeAll,
+                                     Pageable pageable);
 }

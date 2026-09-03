@@ -93,4 +93,36 @@ public interface UserRepository extends JpaRepository<User, Long> {
                       @Param("role") Role role,
                       @Param("status") UserStatus status,
                       Pageable pageable);
+
+    /**
+     * Búsqueda global de usuarios por coincidencia de texto en nombre de
+     * usuario, nombre o apellido (RF-035).
+     *
+     * <p>Cuando {@code includeAll} es {@code false} sólo se devuelven
+     * usuarios activos y se excluyen las cuentas con rol
+     * {@link Role#ADMINISTRADOR}; este modo aplica a los estudiantes e
+     * instructores. El administrador utiliza {@code includeAll = true}
+     * para obtener resultados sin restricción.</p>
+     *
+     * @param q          fragmento a buscar (nunca nulo, ya normalizado).
+     * @param includeAll indica si deben incluirse usuarios sin restricción.
+     * @param pageable   configuración de paginación.
+     * @return página con los usuarios coincidentes.
+     */
+    @Query("""
+            select u from User u
+            where (lower(u.username)  like lower(concat('%', :q, '%')) or
+                   lower(u.firstName) like lower(concat('%', :q, '%')) or
+                   lower(u.lastName)  like lower(concat('%', :q, '%')))
+              and (
+                    :includeAll = true
+                 or (
+                        u.status = tech.impulso.users.entity.UserStatus.ACTIVA
+                    and u.role  <> tech.impulso.users.entity.Role.ADMINISTRADOR
+                 )
+              )
+            """)
+    Page<User> globalSearch(@Param("q") String q,
+                            @Param("includeAll") boolean includeAll,
+                            Pageable pageable);
 }

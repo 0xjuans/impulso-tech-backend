@@ -1,5 +1,7 @@
 package tech.impulso.lessons.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -61,4 +63,39 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
               and l.module.status = tech.impulso.common.content.ContentStatus.PUBLICADO
             """)
     long countMandatoryPublishedInCourse(@Param("courseId") Long courseId);
+
+    /**
+     * Búsqueda global de lecciones por coincidencia de texto en título o
+     * descripción, respetando la visibilidad del solicitante (RF-035).
+     *
+     * <p>Una lección es visible para un estudiante únicamente cuando ella
+     * misma, su módulo y su curso están en estado
+     * {@link ContentStatus#PUBLICADO}. El instructor propietario del curso
+     * la ve en cualquier estado. El administrador ve todo si
+     * {@code includeAll} es {@code true}.</p>
+     *
+     * @param q          fragmento a buscar (nunca nulo, ya normalizado).
+     * @param ownerId    identificador del instructor solicitante, o nulo.
+     * @param includeAll indica si se deben incluir lecciones en cualquier estado.
+     * @param pageable   configuración de paginación.
+     * @return página con las lecciones coincidentes.
+     */
+    @Query("""
+            select l from Lesson l
+            where (lower(l.title)       like lower(concat('%', :q, '%')) or
+                   lower(l.description) like lower(concat('%', :q, '%')))
+              and (
+                    :includeAll = true
+                 or (
+                        l.status              = tech.impulso.common.content.ContentStatus.PUBLICADO
+                    and l.module.status       = tech.impulso.common.content.ContentStatus.PUBLICADO
+                    and l.module.course.status = tech.impulso.common.content.ContentStatus.PUBLICADO
+                 )
+                 or (:ownerId is not null and l.module.course.instructor.id = :ownerId)
+              )
+            """)
+    Page<Lesson> globalSearch(@Param("q") String q,
+                              @Param("ownerId") Long ownerId,
+                              @Param("includeAll") boolean includeAll,
+                              Pageable pageable);
 }

@@ -41,4 +41,36 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
                         @Param("status") ContentStatus status,
                         @Param("learningRouteId") Long learningRouteId,
                         Pageable pageable);
+
+    /**
+     * Búsqueda global de cursos por coincidencia de texto en nombre o
+     * descripción, respetando la visibilidad del solicitante (RF-035).
+     *
+     * <p>Cuando {@code ownerId} es nulo se aceptan resultados cuyo estado
+     * sea {@code PUBLICADO}; si adicionalmente {@code includeAll} es
+     * {@code true} no se aplica el filtro de estado (uso administrativo).
+     * Cuando {@code ownerId} está presente también se incluyen los cursos
+     * cuyo instructor sea el usuario indicado, independientemente del
+     * estado.</p>
+     *
+     * @param q          fragmento a buscar (nunca nulo, ya normalizado).
+     * @param ownerId    identificador del instructor que solicita, o nulo.
+     * @param includeAll indica si se deben incluir cursos en cualquier estado.
+     * @param pageable   configuración de paginación.
+     * @return página con los cursos coincidentes.
+     */
+    @Query("""
+            select c from Course c
+            where (lower(c.name)        like lower(concat('%', :q, '%')) or
+                   lower(c.description) like lower(concat('%', :q, '%')))
+              and (
+                    :includeAll = true
+                 or c.status = tech.impulso.common.content.ContentStatus.PUBLICADO
+                 or (:ownerId is not null and c.instructor.id = :ownerId)
+              )
+            """)
+    Page<Course> globalSearch(@Param("q") String q,
+                              @Param("ownerId") Long ownerId,
+                              @Param("includeAll") boolean includeAll,
+                              Pageable pageable);
 }
