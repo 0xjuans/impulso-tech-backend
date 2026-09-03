@@ -132,6 +132,18 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!--
+            SDK oficial de AWS para acceder al servicio S3. Se utiliza para
+            hablar con Cloudflare R2 mediante su API S3-compatible: subida,
+            descarga, borrado y generación de URLs firmadas temporales
+            para acceso controlado a archivos (RF-059).
+        -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.28.16</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
