@@ -97,4 +97,19 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
      * Se utiliza para la distribución de cursos por dificultad (RF-058).
      */
     long countByDifficulty(DifficultyLevel difficulty);
+
+    /**
+     * Devuelve cursos publicados en los que el estudiante indicado aún
+     * no está inscrito. Se utiliza como base para las recomendaciones
+     * personalizadas (RF-053).
+     */
+    @Query("""
+            select c from Course c
+            where c.status = tech.impulso.common.content.ContentStatus.PUBLICADO
+              and not exists (
+                    select 1 from Enrollment e
+                    where e.course.id = c.id and e.user.id = :userId
+              )
+            """)
+    Page<Course> findPublishedNotEnrolledByUser(@Param("userId") Long userId, Pageable pageable);
 }

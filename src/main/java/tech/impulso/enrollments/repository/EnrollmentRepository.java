@@ -147,4 +147,27 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
             """, nativeQuery = true)
     List<Object[]> findInstructorCourseEnrollmentStats(@Param("instructorId") Long instructorId,
                                                        @Param("max") int max);
+
+    /**
+     * Devuelve los cursos completados por el estudiante, cargando el
+     * curso asociado. Se utiliza para construir el perfil de
+     * recomendaciones (RF-053).
+     */
+    @Query("""
+            select e.course from Enrollment e
+            where e.user.id = :userId
+              and e.status = tech.impulso.enrollments.entity.EnrollmentStatus.COMPLETADO
+            """)
+    List<tech.impulso.courses.entity.Course> findCompletedCoursesByUser(@Param("userId") Long userId);
+
+    /**
+     * Devuelve los cursos actualmente en curso o iniciados por el
+     * estudiante. Se utiliza para inferir sus intereses actuales.
+     */
+    @Query("""
+            select e.course from Enrollment e
+            where e.user.id = :userId
+              and e.status <> tech.impulso.enrollments.entity.EnrollmentStatus.COMPLETADO
+            """)
+    List<tech.impulso.courses.entity.Course> findInProgressCoursesByUser(@Param("userId") Long userId);
 }

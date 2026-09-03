@@ -88,4 +88,15 @@ public interface ChallengeAttemptRepository extends JpaRepository<ChallengeAttem
               and a.status = tech.impulso.challenges.entity.ChallengeAttemptStatus.PENDIENTE
             """)
     long countPendingByInstructor(@Param("instructorId") Long instructorId);
+
+    /**
+     * Devuelve los identificadores de retos que el estudiante ya
+     * aprobó. Se utiliza para filtrar recomendaciones (RF-053).
+     */
+    @Query("""
+            select distinct a.challenge.id from ChallengeAttempt a
+            where a.user.id = :userId
+              and a.status = tech.impulso.challenges.entity.ChallengeAttemptStatus.APROBADO
+            """)
+    java.util.List<Long> findApprovedChallengeIds(@Param("userId") Long userId);
 }
