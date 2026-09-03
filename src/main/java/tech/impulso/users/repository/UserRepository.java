@@ -136,4 +136,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Cuenta cuántos usuarios se encuentran en el estado indicado.
      */
     long countByStatus(UserStatus status);
+
+    /**
+     * Serie temporal de registros diarios de usuarios de los últimos
+     * {@code days} días (RF-058). Devuelve tuplas
+     * {@code [fecha (java.sql.Date), cantidad (Number)]} ordenadas
+     * ascendentemente por fecha.
+     */
+    @Query(value = """
+            select date_trunc('day', created_at)::date as day, count(*) as total
+            from users
+            where created_at >= now() - make_interval(days => :days)
+            group by day
+            order by day
+            """, nativeQuery = true)
+    java.util.List<Object[]> countRegistrationsByDay(@org.springframework.data.repository.query.Param("days") int days);
 }

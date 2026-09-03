@@ -91,4 +91,10 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
      * sin filtrar por estado.
      */
     long countByInstructorId(Long instructorId);
+
+    /**
+     * Cuenta cuántos cursos existen para el nivel de dificultad indicado.
+     * Se utiliza para la distribución de cursos por dificultad (RF-058).
+     */
+    long countByDifficulty(DifficultyLevel difficulty);
 }
