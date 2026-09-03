@@ -73,4 +73,22 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
                               @Param("ownerId") Long ownerId,
                               @Param("includeAll") boolean includeAll,
                               Pageable pageable);
+
+    /**
+     * Cuenta cuántos cursos existen en el estado indicado. Se utiliza en
+     * el panel del administrador (RF-033).
+     */
+    long countByStatus(ContentStatus status);
+
+    /**
+     * Cuenta cuántos cursos gestiona el instructor indicado en el estado
+     * suministrado. Se utiliza en el panel del instructor (RF-032).
+     */
+    long countByInstructorIdAndStatus(Long instructorId, ContentStatus status);
+
+    /**
+     * Cuenta el total de cursos gestionados por el instructor indicado
+     * sin filtrar por estado.
+     */
+    long countByInstructorId(Long instructorId);
 }

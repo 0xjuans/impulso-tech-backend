@@ -3,6 +3,8 @@ package tech.impulso.enrollments.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import tech.impulso.enrollments.entity.Enrollment;
 import tech.impulso.enrollments.entity.EnrollmentStatus;
@@ -53,4 +55,25 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
      * @return cantidad total de inscripciones.
      */
     long countByUserId(Long userId);
+
+    /**
+     * Cuenta el total de inscripciones registradas en cursos del
+     * instructor indicado. Se utiliza en el panel del instructor
+     * (RF-032).
+     */
+    @Query("""
+            select count(e) from Enrollment e
+            where e.course.instructor.id = :instructorId
+            """)
+    long countByInstructor(@Param("instructorId") Long instructorId);
+
+    /**
+     * Cuenta el número de estudiantes distintos inscritos en algún curso
+     * del instructor indicado.
+     */
+    @Query("""
+            select count(distinct e.user.id) from Enrollment e
+            where e.course.instructor.id = :instructorId
+            """)
+    long countDistinctStudentsByInstructor(@Param("instructorId") Long instructorId);
 }

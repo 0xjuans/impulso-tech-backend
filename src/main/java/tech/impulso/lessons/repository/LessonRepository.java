@@ -98,4 +98,25 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
                               @Param("ownerId") Long ownerId,
                               @Param("includeAll") boolean includeAll,
                               Pageable pageable);
+
+    /**
+     * Cuenta cuántas lecciones publicadas gestiona el instructor
+     * indicado. Se utiliza en el panel del instructor (RF-032).
+     */
+    @Query("""
+            select count(l) from Lesson l
+            where l.module.course.instructor.id = :instructorId
+              and l.status = tech.impulso.common.content.ContentStatus.PUBLICADO
+            """)
+    long countPublishedByInstructor(@Param("instructorId") Long instructorId);
+
+    /**
+     * Cuenta cuántas lecciones publicadas hay en toda la plataforma. Se
+     * utiliza en el panel del administrador (RF-033).
+     */
+    @Query("""
+            select count(l) from Lesson l
+            where l.status = tech.impulso.common.content.ContentStatus.PUBLICADO
+            """)
+    long countAllPublished();
 }

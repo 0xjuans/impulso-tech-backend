@@ -76,4 +76,16 @@ public interface ChallengeAttemptRepository extends JpaRepository<ChallengeAttem
               and a.status = tech.impulso.challenges.entity.ChallengeAttemptStatus.APROBADO
             """)
     long countDistinctSolvedChallenges(@Param("userId") Long userId);
+
+    /**
+     * Cuenta los intentos pendientes de revisión sobre retos del
+     * instructor indicado. Se utiliza en el panel del instructor
+     * (RF-032).
+     */
+    @Query("""
+            select count(a) from ChallengeAttempt a
+            where a.challenge.instructor.id = :instructorId
+              and a.status = tech.impulso.challenges.entity.ChallengeAttemptStatus.PENDIENTE
+            """)
+    long countPendingByInstructor(@Param("instructorId") Long instructorId);
 }

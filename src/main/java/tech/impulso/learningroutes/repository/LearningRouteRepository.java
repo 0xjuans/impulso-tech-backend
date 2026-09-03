@@ -66,4 +66,22 @@ public interface LearningRouteRepository extends JpaRepository<LearningRoute, Lo
                                      @Param("ownerId") Long ownerId,
                                      @Param("includeAll") boolean includeAll,
                                      Pageable pageable);
+
+    /**
+     * Cuenta cuántas rutas existen en el estado indicado. Se utiliza en
+     * el panel del administrador (RF-033).
+     */
+    long countByStatus(ContentStatus status);
+
+    /**
+     * Cuenta cuántas rutas gestiona el instructor indicado en el estado
+     * suministrado. Se utiliza en el panel del instructor (RF-032).
+     */
+    long countByInstructorIdAndStatus(Long instructorId, ContentStatus status);
+
+    /**
+     * Cuenta el total de rutas gestionadas por el instructor sin filtrar
+     * por estado.
+     */
+    long countByInstructorId(Long instructorId);
 }

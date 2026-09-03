@@ -38,4 +38,17 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
                                @Param("status") SupportTicketStatus status,
                                @Param("type") SupportTicketType type,
                                Pageable pageable);
+
+    /**
+     * Cuenta cuántos tickets existen en el estado indicado. Se utiliza
+     * en el panel del administrador (RF-033).
+     */
+    long countByStatus(SupportTicketStatus status);
+
+    /**
+     * Cuenta cuántos tickets están asignados al responsable indicado en
+     * el estado suministrado. Se utiliza en el panel del instructor
+     * (RF-032) cuando actúa como resolutor.
+     */
+    long countByAssigneeIdAndStatus(Long assigneeId, SupportTicketStatus status);
 }

@@ -125,4 +125,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> globalSearch(@Param("q") String q,
                             @Param("includeAll") boolean includeAll,
                             Pageable pageable);
+
+    /**
+     * Cuenta cuántos usuarios tienen el rol indicado. Se utiliza en el
+     * panel del administrador (RF-033).
+     */
+    long countByRole(Role role);
+
+    /**
+     * Cuenta cuántos usuarios se encuentran en el estado indicado.
+     */
+    long countByStatus(UserStatus status);
 }

@@ -92,4 +92,20 @@ public interface ProjectSubmissionRepository extends JpaRepository<ProjectSubmis
               and s.status = tech.impulso.projects.entity.ProjectSubmissionStatus.APROBADA
             """)
     long countDistinctApprovedProjects(@Param("userId") Long userId);
+
+    /**
+     * Cuenta las entregas pendientes de revisión (estados
+     * {@code ENVIADA} y {@code EN_REVISION}) sobre proyectos del
+     * instructor indicado. Se utiliza en el panel del instructor
+     * (RF-032).
+     */
+    @Query("""
+            select count(s) from ProjectSubmission s
+            where s.project.instructor.id = :instructorId
+              and s.status in (
+                    tech.impulso.projects.entity.ProjectSubmissionStatus.ENVIADA,
+                    tech.impulso.projects.entity.ProjectSubmissionStatus.EN_REVISION
+              )
+            """)
+    long countPendingByInstructor(@Param("instructorId") Long instructorId);
 }
