@@ -94,6 +94,10 @@ springdoc:
 
 # Configuración específica de la aplicación (namespace propio).
 app:
+  # Orígenes permitidos para CORS. Se aceptan varios valores separados por
+  # coma. En producción debe restringirse al dominio del frontend real.
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:4200}
   security:
     jwt:
       # El valor real debe suministrarse mediante variable de entorno JWT_SECRET.
