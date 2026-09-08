@@ -156,3 +156,12 @@ management:
       probes:
         enabled: true
       show-details: never
+  health:
+    # El health indicator de correo abre conexión SMTP al proveedor y
+    # es frecuente que reporte fallos temporales por límites del ISP o
+    # del propio proveedor SMTP; se apaga para evitar reportar la
+    # aplicación como DOWN por un componente no crítico.
+    mail:
+      enabled: false
+    ldap:
+      enabled: false
