@@ -7,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -48,6 +49,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public JwtAuthenticationFilter(JwtService jwtService, TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
         this.tokenBlacklistService = tokenBlacklistService;
+    }
+
+    /**
+     * Las peticiones {@code OPTIONS} corresponden al preflight de CORS
+     * y no llevan token. Se omiten para que Spring Security aplique la
+     * respuesta preflight sin interferencias.
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        return HttpMethod.OPTIONS.matches(request.getMethod());
     }
 
     @Override

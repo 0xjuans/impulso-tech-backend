@@ -1,0 +1,40 @@
+# Archivos que no deben entrar a la imagen: acelera el build y evita
+# introducir credenciales o binarios locales.
+
+# Build outputs
+target/
+build/
+
+# Herramientas y metadatos locales
+.idea/
+.vscode/
+.mvn/
+*.iml
+*.log
+*.tmp
+
+# Control de versiones
+.git/
+.gitignore
+.gitattributes
+
+# Documentación y notas
+doc/
+docs/
+README.md
+CLAUDE.md
+
+# Docker / compose locales
+docker-compose.yml
+docker-compose*.yml
+
+# Variables de entorno locales — jamás deben viajar a la imagen.
+.env
+.env.*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# CI y otros
+.github/

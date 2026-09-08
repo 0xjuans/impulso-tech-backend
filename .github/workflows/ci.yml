@@ -1,0 +1,73 @@
+# =============================================================================
+# CI del backend de Impulso Tech.
+#
+# Ejecuta la compilación completa del proyecto y las pruebas unitarias e
+# integradas ante cada pull request y ante cada push a main o develop.
+# Además valida que la imagen Docker se construya correctamente para no
+# descubrir problemas de build hasta el despliegue en Railway.
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build & run tests
+        env:
+          # Las pruebas no deben depender de credenciales reales. Se define
+          # un secreto ficticio para satisfacer la validación mínima del JWT.
+          JWT_SECRET: ci-test-secret-please-override-in-production-not-used
+          SPRING_PROFILES_ACTIVE: test
+        run: mvn -B -ntp verify
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+          if-no-files-found: ignore
+
+  docker-build:
+    name: Docker image build (smoke)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image without push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: impulso-tech-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
