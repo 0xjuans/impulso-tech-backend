@@ -149,4 +149,10 @@ management:
         include: health,info
   endpoint:
     health:
+      # Habilita los sub-endpoints liveness y readiness para que las
+      # plataformas de despliegue (Railway, Kubernetes) puedan
+      # diferenciar entre "la JVM está viva" y "la aplicación está
+      # lista para recibir tráfico".
+      probes:
+        enabled: true
       show-details: never
