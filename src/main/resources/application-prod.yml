@@ -11,8 +11,10 @@ spring:
 
 logging:
   level:
-    root: WARN
+    root: INFO
     tech.impulso: INFO
+    org.springframework.boot.web.embedded.tomcat: INFO
+    org.apache.catalina: INFO
 
 springdoc:
   swagger-ui:
