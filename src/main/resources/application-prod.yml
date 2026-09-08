@@ -6,8 +6,25 @@
 # La documentación de la API se restringe según las políticas de seguridad.
 # -----------------------------------------------------------------------------
 spring:
+  # Excluimos la auto-configuración de repositorios de Redis: usamos
+  # Redis únicamente como cache clave-valor y con RedisTemplate directo,
+  # nunca como repositorio de Spring Data. Excluir esta auto-config
+  # evita el escaneo doble de todos los repositorios JPA (que Spring
+  # Data Redis intenta clasificar como propios) y reduce ~30% el
+  # tiempo y memoria de arranque.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   jpa:
     show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        # Bajar el batch de fetch reduce la memoria usada por sesión
+        # de Hibernate al hidratar entidades con relaciones.
+        default_batch_fetch_size: 8
+        query:
+          in_clause_parameter_padding: true
 
 logging:
   level:

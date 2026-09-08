@@ -36,7 +36,7 @@ COPY --from=build --chown=app:app /workspace/app.jar /app/app.jar
 
 USER app
 
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:ReservedCodeCacheSize=64m"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=60 -XX:+UseSerialGC -Xss384k -XX:ReservedCodeCacheSize=48m -XX:+ExitOnOutOfMemoryError -XX:MetaspaceSize=96m"
 ENV SERVER_PORT=8080
 EXPOSE 8080
 
