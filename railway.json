@@ -5,7 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "",
     "healthcheckPath": "/actuator/health/liveness",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
