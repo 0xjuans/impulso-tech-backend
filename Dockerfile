@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # =============================================================================
 # Dockerfile del backend de Impulso Tech.
 #
@@ -18,12 +17,12 @@ WORKDIR /workspace
 # Cache de dependencias: copiamos el pom.xml primero para que la resolución
 # se reutilice cuando el código fuente cambia sin tocar dependencias.
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 mvn -q -B -DskipTests dependency:go-offline
+RUN mvn -q -B -DskipTests dependency:go-offline
 
 # Compilación del proyecto. Los tests se ejecutan en el pipeline de CI antes
 # del despliegue para no bloquear la construcción de la imagen.
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 mvn -q -B -DskipTests package \
+RUN mvn -q -B -DskipTests package \
     && cp target/*.jar /workspace/app.jar
 
 # --- Etapa de ejecución ------------------------------------------------------
