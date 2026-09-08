@@ -36,7 +36,7 @@ COPY --from=build --chown=app:app /workspace/app.jar /app/app.jar
 
 USER app
 
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseZGC -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:ReservedCodeCacheSize=64m"
 ENV SERVER_PORT=8080
 EXPOSE 8080
 
