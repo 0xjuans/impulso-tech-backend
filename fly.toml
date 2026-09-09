@@ -27,13 +27,19 @@ primary_region = "gru"           # Sao Paulo: menor latencia desde Colombia.
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"    # Se apaga tras ~5 min sin trafico.
-  auto_start_machines = true     # Arranca al recibir la primera peticion.
-  min_machines_running = 0       # Free tier: puede escalar a cero.
+  # Spring Boot tarda ~35-45s en arrancar en frio; el proxy de Fly solo
+  # espera 8s antes de responder 503, por lo que el modelo scale-to-zero
+  # con "stop" no es viable. Mantener 1 maquina siempre encendida evita
+  # cold starts y garantiza que la primera peticion sea inmediata.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
   processes = ["app"]
 
   [[http_service.checks]]
-    grace_period = "60s"
+    # grace_period generoso para cubrir el startup completo de Spring Boot
+    # + Flyway + Hibernate en una VM shared-cpu-1x.
+    grace_period = "90s"
     interval = "30s"
     method = "GET"
     timeout = "10s"
