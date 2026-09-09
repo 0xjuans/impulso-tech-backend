@@ -1,0 +1,46 @@
+# =============================================================================
+# Configuracion de despliegue en Fly.io para el backend de Impulso Tech.
+#
+# Fly.io ejecuta la imagen construida a partir del Dockerfile en una VM
+# ligera ("Machine"). El puerto interno debe coincidir con el que expone
+# la aplicacion (8080). Fly inyecta $PORT como Railway lo hacia, por lo
+# que el ENTRYPOINT del Dockerfile no requiere cambios.
+#
+# Variables sensibles (DATABASE_URL, REDIS_URL, JWT_SECRET, credenciales
+# de correo, etc.) NO deben declararse aqui: se cargan con
+#   fly secrets set NOMBRE=valor
+# =============================================================================
+
+app = "impulso-tech-backend"
+primary_region = "gru"           # Sao Paulo: menor latencia desde Colombia.
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SPRING_PROFILES_ACTIVE = "prod"
+  SERVER_PORT = "8080"
+  # Origenes permitidos para CORS. El backend soporta multiples valores
+  # separados por coma; ajustar cuando cambie el dominio del frontend.
+  APP_CORS_ORIGINS = "https://impulso-tech-frontend.vercel.app,http://localhost:4200"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"    # Se apaga tras ~5 min sin trafico.
+  auto_start_machines = true     # Arranca al recibir la primera peticion.
+  min_machines_running = 0       # Free tier: puede escalar a cero.
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    method = "GET"
+    timeout = "10s"
+    path = "/actuator/health/liveness"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
