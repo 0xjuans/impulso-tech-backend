@@ -33,11 +33,11 @@ public interface EducationalResourceRepository extends JpaRepository<Educational
      */
     @Query("""
             select r from EducationalResource r
-            where (:search          is null or
-                   lower(r.name)        like lower(concat('%', :search, '%')) or
-                   lower(r.description) like lower(concat('%', :search, '%')) or
-                   lower(r.topic)       like lower(concat('%', :search, '%')) or
-                   lower(r.author)      like lower(concat('%', :search, '%')))
+            where (cast(:search as string) is null or
+                   lower(r.name)        like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.description) like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.topic)       like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.author)      like lower(concat('%', cast(:search as string), '%')))
               and (:type             is null or r.type       = :type)
               and (:difficulty       is null or r.difficulty = :difficulty)
               and (:status           is null or r.status     = :status)

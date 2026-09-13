@@ -27,10 +27,10 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
      */
     @Query("""
             select p from CommunityPost p
-            where (:search      is null or
-                   lower(p.title)       like lower(concat('%', :search, '%')) or
-                   lower(p.description) like lower(concat('%', :search, '%')) or
-                   lower(p.tags)        like lower(concat('%', :search, '%')))
+            where (cast(:search as string) is null or
+                   lower(p.title)       like lower(concat('%', cast(:search as string), '%')) or
+                   lower(p.description) like lower(concat('%', cast(:search as string), '%')) or
+                   lower(p.tags)        like lower(concat('%', cast(:search as string), '%')))
               and (:relatedType is null or p.relatedType = :relatedType)
               and (:relatedId   is null or p.relatedId   = :relatedId)
               and (:authorId    is null or p.author.id   = :authorId)

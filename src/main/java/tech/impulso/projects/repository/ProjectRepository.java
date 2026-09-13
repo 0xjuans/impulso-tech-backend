@@ -30,9 +30,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("""
             select p from Project p
-            where (:search          is null or
-                   lower(p.name)        like lower(concat('%', :search, '%')) or
-                   lower(p.description) like lower(concat('%', :search, '%')))
+            where (cast(:search as string) is null or
+                   lower(p.name)        like lower(concat('%', cast(:search as string), '%')) or
+                   lower(p.description) like lower(concat('%', cast(:search as string), '%')))
               and (:difficulty      is null or p.difficulty = :difficulty)
               and (:status          is null or p.status     = :status)
               and (:learningRouteId is null or p.learningRoute.id = :learningRouteId)

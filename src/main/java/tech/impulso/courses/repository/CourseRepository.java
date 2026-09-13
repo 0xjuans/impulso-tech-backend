@@ -29,9 +29,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
      */
     @Query("""
             select c from Course c
-            where (:search          is null or
-                   lower(c.name)        like lower(concat('%', :search, '%')) or
-                   lower(c.description) like lower(concat('%', :search, '%')))
+            where (cast(:search as string) is null or
+                   lower(c.name)        like lower(concat('%', cast(:search as string), '%')) or
+                   lower(c.description) like lower(concat('%', cast(:search as string), '%')))
               and (:difficulty      is null or c.difficulty = :difficulty)
               and (:status          is null or c.status     = :status)
               and (:learningRouteId is null or c.learningRoute.id = :learningRouteId)

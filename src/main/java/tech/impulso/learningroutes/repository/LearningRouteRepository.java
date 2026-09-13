@@ -30,9 +30,9 @@ public interface LearningRouteRepository extends JpaRepository<LearningRoute, Lo
      */
     @Query("""
             select r from LearningRoute r
-            where (:search     is null or
-                   lower(r.name)        like lower(concat('%', :search, '%')) or
-                   lower(r.description) like lower(concat('%', :search, '%')))
+            where (cast(:search as string) is null or
+                   lower(r.name)        like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.description) like lower(concat('%', cast(:search as string), '%')))
               and (:difficulty is null or r.difficulty = :difficulty)
               and (:status     is null or r.status     = :status)
             """)

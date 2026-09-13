@@ -81,11 +81,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("""
             select u from User u
-            where (:search is null or
-                   lower(u.email)     like lower(concat('%', :search, '%')) or
-                   lower(u.username)  like lower(concat('%', :search, '%')) or
-                   lower(u.firstName) like lower(concat('%', :search, '%')) or
-                   lower(u.lastName)  like lower(concat('%', :search, '%')))
+            where (cast(:search as string) is null or
+                   lower(u.email)     like lower(concat('%', cast(:search as string), '%')) or
+                   lower(u.username)  like lower(concat('%', cast(:search as string), '%')) or
+                   lower(u.firstName) like lower(concat('%', cast(:search as string), '%')) or
+                   lower(u.lastName)  like lower(concat('%', cast(:search as string), '%')))
               and (:role   is null or u.role   = :role)
               and (:status is null or u.status = :status)
             """)
