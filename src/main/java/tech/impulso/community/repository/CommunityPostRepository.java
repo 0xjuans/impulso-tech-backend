@@ -31,9 +31,9 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
                    lower(p.title)       like lower(concat('%', cast(:search as string), '%')) or
                    lower(p.description) like lower(concat('%', cast(:search as string), '%')) or
                    lower(p.tags)        like lower(concat('%', cast(:search as string), '%')))
-              and p.relatedType = coalesce(:relatedType, p.relatedType)
-              and p.relatedId = coalesce(:relatedId, p.relatedId)
-              and p.author.id = coalesce(:authorId, p.author.id)
+              and (cast(:relatedType as string) is null or p.relatedType = :relatedType)
+              and (cast(:relatedId   as long)   is null or p.relatedId   = :relatedId)
+              and (cast(:authorId    as long)   is null or p.author.id   = :authorId)
             """)
     Page<CommunityPost> search(@Param("search") String search,
                                @Param("relatedType") RelatedContentType relatedType,

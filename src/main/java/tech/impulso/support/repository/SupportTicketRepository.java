@@ -28,10 +28,10 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
      */
     @Query("""
             select t from SupportTicket t
-            where t.reporter.id = coalesce(:reporterId, t.reporter.id)
-              and t.assignee.id = coalesce(:assigneeId, t.assignee.id)
-              and t.status = coalesce(:status, t.status)
-              and t.type = coalesce(:type, t.type)
+            where (cast(:reporterId as long) is null or t.reporter.id = :reporterId)
+              and (cast(:assigneeId as long) is null or t.assignee.id = :assigneeId)
+              and (cast(:status as string) is null or t.status = :status)
+              and (cast(:type as string) is null or t.type = :type)
             """)
     Page<SupportTicket> search(@Param("reporterId") Long reporterId,
                                @Param("assigneeId") Long assigneeId,

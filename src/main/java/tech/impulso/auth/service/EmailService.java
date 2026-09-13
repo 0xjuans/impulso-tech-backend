@@ -136,58 +136,134 @@ public class EmailService {
     }
 
     /**
-     * Construye la plantilla HTML del correo de verificación.
+     * Construye la plantilla HTML del correo de verificación con la
+     * identidad visual de Impulso Tech: fondo oscuro con acento naranja,
+     * wordmark tipo terminal y tipografía monoespaciada para las piezas
+     * clave. Los estilos se declaran inline porque los clientes de correo
+     * (Gmail, Outlook, Apple Mail) descartan hojas de estilo externas.
      *
      * @param link enlace de verificación ya construido.
      * @return HTML listo para enviar.
      */
     private String verificationTemplate(String link) {
-        return """
-                <!doctype html>
-                <html lang="es">
-                  <body style="font-family: Arial, sans-serif; color: #1f2937; background: #f9fafb; padding: 24px;">
-                    <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
-                      <h1 style="margin: 0 0 16px; font-size: 22px; color: #111827;">Bienvenido a Impulso Tech</h1>
-                      <p style="margin: 0 0 16px; line-height: 1.5;">Gracias por unirte a la plataforma. Confirma tu cuenta para comenzar a aprender.</p>
-                      <p style="margin: 0 0 24px;">
-                        <a href="%s" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none;">Confirmar mi cuenta</a>
-                      </p>
-                      <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-                      <p style="margin: 0 0 24px; font-size: 13px; word-break: break-all; color: #2563eb;">%s</p>
-                      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-                      <p style="margin: 0; font-size: 12px; color: #9ca3af;">Si tú no creaste la cuenta, puedes ignorar este correo.</p>
-                    </div>
-                  </body>
-                </html>
-                """.formatted(link, link);
+        return brandedTemplate(
+                "Confirma tu cuenta",
+                "Bienvenido a Impulso Tech",
+                "Estamos a un paso de que empieces tu ruta de aprendizaje. Confirma tu cuenta para desbloquear los cursos, retos y laboratorios.",
+                "> impulso auth --verify",
+                "Confirmar mi cuenta",
+                link,
+                "El enlace tiene una vigencia limitada. Si tú no creaste la cuenta, puedes ignorar este correo con tranquilidad.");
     }
 
     /**
      * Construye la plantilla HTML del correo de recuperación de
-     * contraseña.
+     * contraseña reutilizando el layout de marca definido en
+     * {@link #brandedTemplate}.
      *
      * @param link enlace de recuperación ya construido.
      * @return HTML listo para enviar.
      */
     private String passwordResetTemplate(String link) {
+        return brandedTemplate(
+                "Recupera tu contraseña",
+                "Recuperación de contraseña",
+                "Recibimos una solicitud para restablecer la contraseña de tu cuenta en Impulso Tech. Si tú la iniciaste, continúa con el botón.",
+                "> impulso auth --reset",
+                "Restablecer contraseña",
+                link,
+                "El enlace expira pronto por seguridad. Si tú no solicitaste el cambio, ignora este correo y tu contraseña seguirá intacta.");
+    }
+
+    /**
+     * Layout común de los correos transaccionales de Impulso Tech.
+     *
+     * <p>Renderiza una tarjeta blanca sobre un fondo suave, con el
+     * wordmark {@code > Impulso.tech} en la cabecera, un chip tipo
+     * terminal con el comando contextual, un botón CTA en naranja y un
+     * bloque de enlace en texto plano como fallback. La estructura se
+     * apoya en tablas por compatibilidad con clientes de correo antiguos
+     * (Outlook 2016 en Windows en particular).</p>
+     *
+     * @param preheader   texto oculto que aparece como preview del correo.
+     * @param heading     titular principal del mensaje.
+     * @param body        párrafo introductorio bajo el titular.
+     * @param commandChip texto del chip terminal (por ejemplo
+     *                    {@code "> impulso auth --verify"}).
+     * @param ctaLabel    etiqueta del botón de acción.
+     * @param link        URL a la que apunta el botón y el bloque fallback.
+     * @param footerNote  aclaración final sobre vigencia o desestimación.
+     * @return HTML listo para enviar.
+     */
+    private String brandedTemplate(String preheader, String heading, String body,
+                                   String commandChip, String ctaLabel, String link,
+                                   String footerNote) {
         return """
                 <!doctype html>
                 <html lang="es">
-                  <body style="font-family: Arial, sans-serif; color: #1f2937; background: #f9fafb; padding: 24px;">
-                    <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
-                      <h1 style="margin: 0 0 16px; font-size: 22px; color: #111827;">Recuperación de contraseña</h1>
-                      <p style="margin: 0 0 16px; line-height: 1.5;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en Impulso Tech.</p>
-                      <p style="margin: 0 0 24px;">
-                        <a href="%s" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none;">Restablecer contraseña</a>
-                      </p>
-                      <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-                      <p style="margin: 0 0 24px; font-size: 13px; word-break: break-all; color: #2563eb;">%s</p>
-                      <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">El enlace tiene una vigencia limitada por motivos de seguridad.</p>
-                      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-                      <p style="margin: 0; font-size: 12px; color: #9ca3af;">Si tú no solicitaste el cambio, puedes ignorar este correo.</p>
-                    </div>
+                  <head>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <title>%s</title>
+                  </head>
+                  <body style="margin:0; padding:0; background:#f6f2ee; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#201515;">
+                    <div style="display:none; overflow:hidden; line-height:1; opacity:0; max-height:0; max-width:0;">%s</div>
+                    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:#f6f2ee; padding:32px 16px;">
+                      <tr>
+                        <td align="center">
+                          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%%; max-width:560px; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(32,21,21,0.06); border:1px solid rgba(32,21,21,0.06);">
+                            <tr>
+                              <td style="background:#201515; padding:24px 32px;">
+                                <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                  <tr>
+                                    <td style="font-family:'JetBrains Mono','Fira Code',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:18px; color:#ffffff; letter-spacing:-0.01em;">
+                                      <span style="color:#ff4f00;">&gt;</span> Impulso<span style="color:#ff4f00;">.tech</span><span style="display:inline-block; width:8px; height:16px; background:#ff4f00; margin-left:4px; vertical-align:-2px;"></span>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:36px 32px 8px;">
+                                <span style="display:inline-block; padding:6px 12px; border-radius:999px; background:#fff2ea; color:#ff4f00; font-family:'JetBrains Mono','Fira Code',ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; letter-spacing:0.02em;">%s</span>
+                                <h1 style="margin:16px 0 12px; font-size:24px; line-height:1.25; color:#201515; letter-spacing:-0.02em;">%s</h1>
+                                <p style="margin:0 0 24px; font-size:15px; line-height:1.6; color:#4a3a3a;">%s</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td align="center" style="padding:0 32px 8px;">
+                                <table role="presentation" cellpadding="0" cellspacing="0">
+                                  <tr>
+                                    <td style="border-radius:999px; background:#ff4f00;">
+                                      <a href="%s" style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; letter-spacing:0.01em;">%s &rarr;</a>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:24px 32px 8px;">
+                                <p style="margin:0 0 8px; font-size:13px; color:#7a6a68;">Si el botón no funciona, copia y pega este enlace:</p>
+                                <p style="margin:0; font-size:12px; word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#ff4f00; background:#fff8f4; padding:12px 14px; border-radius:8px; border:1px solid #ffe0d1;">%s</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding:16px 32px 32px;">
+                                <hr style="border:none; border-top:1px solid rgba(32,21,21,0.08); margin:0 0 16px;" />
+                                <p style="margin:0; font-size:12px; line-height:1.5; color:#8a7a78;">%s</p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="background:#faf7f4; padding:20px 32px; text-align:center;">
+                                <p style="margin:0; font-size:11px; color:#8a7a78;">© Impulso Tech · Aprende programación con retos, IA y comunidad.</p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
                   </body>
                 </html>
-                """.formatted(link, link);
+                """.formatted(preheader, preheader, commandChip, heading, body, link, ctaLabel, link, footerNote);
     }
 }

@@ -33,11 +33,11 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             where (cast(:search as string) is null or
                    lower(p.name)        like lower(concat('%', cast(:search as string), '%')) or
                    lower(p.description) like lower(concat('%', cast(:search as string), '%')))
-              and p.difficulty = coalesce(:difficulty, p.difficulty)
-              and p.status = coalesce(:status, p.status)
-              and p.learningRoute.id = coalesce(:learningRouteId, p.learningRoute.id)
-              and p.course.id = coalesce(:courseId, p.course.id)
-              and p.module.id = coalesce(:moduleId, p.module.id)
+              and (cast(:difficulty as string) is null or p.difficulty = :difficulty)
+              and (cast(:status as string) is null or p.status = :status)
+              and (cast(:learningRouteId as long) is null or p.learningRoute.id = :learningRouteId)
+              and (cast(:courseId as long) is null or p.course.id = :courseId)
+              and (cast(:moduleId as long) is null or p.module.id = :moduleId)
             """)
     Page<Project> search(@Param("search") String search,
                          @Param("difficulty") DifficultyLevel difficulty,

@@ -38,13 +38,13 @@ public interface EducationalResourceRepository extends JpaRepository<Educational
                    lower(r.description) like lower(concat('%', cast(:search as string), '%')) or
                    lower(r.topic)       like lower(concat('%', cast(:search as string), '%')) or
                    lower(r.author)      like lower(concat('%', cast(:search as string), '%')))
-              and r.type = coalesce(:type, r.type)
-              and r.difficulty = coalesce(:difficulty, r.difficulty)
-              and r.status = coalesce(:status, r.status)
-              and r.learningRoute.id = coalesce(:learningRouteId, r.learningRoute.id)
-              and r.course.id = coalesce(:courseId, r.course.id)
-              and r.module.id = coalesce(:moduleId, r.module.id)
-              and r.lesson.id = coalesce(:lessonId, r.lesson.id)
+              and (cast(:type as string) is null or r.type = :type)
+              and (cast(:difficulty as string) is null or r.difficulty = :difficulty)
+              and (cast(:status as string) is null or r.status = :status)
+              and (cast(:learningRouteId as long) is null or r.learningRoute.id = :learningRouteId)
+              and (cast(:courseId as long) is null or r.course.id = :courseId)
+              and (cast(:moduleId as long) is null or r.module.id = :moduleId)
+              and (cast(:lessonId as long) is null or r.lesson.id = :lessonId)
             """)
     Page<EducationalResource> search(@Param("search") String search,
                                      @Param("type") ResourceType type,
