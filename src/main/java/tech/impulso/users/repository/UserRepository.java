@@ -86,8 +86,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
                    lower(u.username)  like lower(concat('%', cast(:search as string), '%')) or
                    lower(u.firstName) like lower(concat('%', cast(:search as string), '%')) or
                    lower(u.lastName)  like lower(concat('%', cast(:search as string), '%')))
-              and (:role   is null or u.role   = :role)
-              and (:status is null or u.status = :status)
+              and u.role   = coalesce(:role,   u.role)
+              and u.status = coalesce(:status, u.status)
             """)
     Page<User> search(@Param("search") String search,
                       @Param("role") Role role,

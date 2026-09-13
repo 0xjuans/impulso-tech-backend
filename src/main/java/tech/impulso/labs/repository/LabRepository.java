@@ -32,10 +32,10 @@ public interface LabRepository extends JpaRepository<Lab, Long> {
             where (cast(:search as string) is null or
                    lower(l.title)       like lower(concat('%', cast(:search as string), '%')) or
                    lower(l.description) like lower(concat('%', cast(:search as string), '%')))
-              and (:language   is null or l.language = :language)
-              and (:status     is null or l.status   = :status)
-              and (:instructor is null or l.instructor.id = :instructor)
-              and (:courseId   is null or l.course.id     = :courseId)
+              and l.language = coalesce(:language, l.language)
+              and l.status = coalesce(:status, l.status)
+              and l.instructor.id = coalesce(:instructor, l.instructor.id)
+              and l.course.id = coalesce(:courseId, l.course.id)
             """)
     Page<Lab> search(@Param("search") String search,
                      @Param("language") String language,

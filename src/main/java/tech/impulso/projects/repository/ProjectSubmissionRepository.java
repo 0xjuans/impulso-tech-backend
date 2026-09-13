@@ -39,7 +39,7 @@ public interface ProjectSubmissionRepository extends JpaRepository<ProjectSubmis
     @Query("""
             select s from ProjectSubmission s
             where s.project.id = :projectId
-              and (:status is null or s.status = :status)
+              and s.status = coalesce(:status, s.status)
             """)
     Page<ProjectSubmission> findByProject(@Param("projectId") Long projectId,
                                           @Param("status") ProjectSubmissionStatus status,

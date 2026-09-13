@@ -26,9 +26,9 @@ public interface AdminActivityLogRepository extends JpaRepository<AdminActivityL
      */
     @Query("""
             select a from AdminActivityLog a
-            where (:adminId    is null or a.admin.id    = :adminId)
-              and (:action     is null or a.action      = :action)
-              and (:targetType is null or a.targetType  = :targetType)
+            where a.admin.id = coalesce(:adminId, a.admin.id)
+              and a.action = coalesce(:action, a.action)
+              and a.targetType = coalesce(:targetType, a.targetType)
             """)
     Page<AdminActivityLog> search(@Param("adminId") Long adminId,
                                   @Param("action") String action,

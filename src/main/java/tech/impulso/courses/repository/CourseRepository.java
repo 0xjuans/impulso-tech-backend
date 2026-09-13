@@ -32,9 +32,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             where (cast(:search as string) is null or
                    lower(c.name)        like lower(concat('%', cast(:search as string), '%')) or
                    lower(c.description) like lower(concat('%', cast(:search as string), '%')))
-              and (:difficulty      is null or c.difficulty = :difficulty)
-              and (:status          is null or c.status     = :status)
-              and (:learningRouteId is null or c.learningRoute.id = :learningRouteId)
+              and c.difficulty = coalesce(:difficulty, c.difficulty)
+              and c.status = coalesce(:status, c.status)
+              and c.learningRoute.id = coalesce(:learningRouteId, c.learningRoute.id)
             """)
     Page<Course> search(@Param("search") String search,
                         @Param("difficulty") DifficultyLevel difficulty,

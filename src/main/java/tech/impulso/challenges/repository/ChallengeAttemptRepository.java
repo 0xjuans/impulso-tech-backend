@@ -30,7 +30,7 @@ public interface ChallengeAttemptRepository extends JpaRepository<ChallengeAttem
     @Query("""
             select a from ChallengeAttempt a
             where a.challenge.id = :challengeId
-              and (:status is null or a.status = :status)
+              and a.status = coalesce(:status, a.status)
             """)
     Page<ChallengeAttempt> findByChallenge(@Param("challengeId") Long challengeId,
                                            @Param("status") ChallengeAttemptStatus status,

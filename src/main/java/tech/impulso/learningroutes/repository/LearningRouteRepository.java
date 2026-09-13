@@ -33,8 +33,8 @@ public interface LearningRouteRepository extends JpaRepository<LearningRoute, Lo
             where (cast(:search as string) is null or
                    lower(r.name)        like lower(concat('%', cast(:search as string), '%')) or
                    lower(r.description) like lower(concat('%', cast(:search as string), '%')))
-              and (:difficulty is null or r.difficulty = :difficulty)
-              and (:status     is null or r.status     = :status)
+              and r.difficulty = coalesce(:difficulty, r.difficulty)
+              and r.status = coalesce(:status, r.status)
             """)
     Page<LearningRoute> search(@Param("search") String search,
                                @Param("difficulty") DifficultyLevel difficulty,

@@ -39,8 +39,8 @@ public interface CommunityReportRepository extends JpaRepository<CommunityReport
      */
     @Query("""
             select r from CommunityReport r
-            where (:status     is null or r.status     = :status)
-              and (:targetType is null or r.targetType = :targetType)
+            where r.status = coalesce(:status, r.status)
+              and r.targetType = coalesce(:targetType, r.targetType)
             """)
     Page<CommunityReport> search(@Param("status") ReportStatus status,
                                  @Param("targetType") ReportTargetType targetType,

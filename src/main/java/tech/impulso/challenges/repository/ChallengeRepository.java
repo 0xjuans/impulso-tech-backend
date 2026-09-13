@@ -35,13 +35,13 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
             where (cast(:search as string) is null or
                    lower(c.name)        like lower(concat('%', cast(:search as string), '%')) or
                    lower(c.description) like lower(concat('%', cast(:search as string), '%')))
-              and (:difficulty      is null or c.difficulty = :difficulty)
-              and (:status          is null or c.status     = :status)
-              and (:language        is null or lower(c.allowedLanguages) like lower(concat('%', :language, '%')))
-              and (:learningRouteId is null or c.learningRoute.id = :learningRouteId)
-              and (:courseId        is null or c.course.id        = :courseId)
-              and (:moduleId        is null or c.module.id        = :moduleId)
-              and (:lessonId        is null or c.lesson.id        = :lessonId)
+              and c.difficulty = coalesce(:difficulty, c.difficulty)
+              and c.status = coalesce(:status, c.status)
+              and (cast(:language as string) is null or lower(c.allowedLanguages) like lower(concat('%', cast(:language as string), '%')))
+              and c.learningRoute.id = coalesce(:learningRouteId, c.learningRoute.id)
+              and c.course.id = coalesce(:courseId, c.course.id)
+              and c.module.id = coalesce(:moduleId, c.module.id)
+              and c.lesson.id = coalesce(:lessonId, c.lesson.id)
             """)
     Page<Challenge> search(@Param("search") String search,
                            @Param("difficulty") DifficultyLevel difficulty,

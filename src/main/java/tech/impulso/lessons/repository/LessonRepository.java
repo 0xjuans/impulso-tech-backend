@@ -29,7 +29,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     @Query("""
             select l from Lesson l
             where l.module.id = :moduleId
-              and (:status is null or l.status = :status)
+              and l.status = coalesce(:status, l.status)
             order by l.orderIndex asc
             """)
     List<Lesson> findByModule(@Param("moduleId") Long moduleId,
