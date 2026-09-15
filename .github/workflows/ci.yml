@@ -4,7 +4,7 @@
 # Ejecuta la compilación completa del proyecto y las pruebas unitarias e
 # integradas ante cada pull request y ante cada push a main o develop.
 # Además valida que la imagen Docker se construya correctamente para no
-# descubrir problemas de build hasta el despliegue en Railway.
+# descubrir problemas de build hasta el despliegue en Fly.io.
 # =============================================================================
 name: CI
 
@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -59,7 +59,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
