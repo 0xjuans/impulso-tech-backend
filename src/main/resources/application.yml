@@ -17,14 +17,44 @@ spring:
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      # `stringtype=unspecified` evita que el driver de PostgreSQL envíe los
-      # parámetros String como tipo `bytea` cuando llegan como `null`. Sin
-      # esta propiedad, cualquier consulta con el patrón
-      # `where (:param is null or lower(campo) like lower(...))` falla en
-      # Postgres con `function lower(bytea) does not exist`, porque el driver
-      # infiere el tipo del parámetro nulo como `bytea` en lugar de `text`.
+      # Pool ajustado al hosting free tier de Neon: pocas conexiones vivas
+      # (Neon corta las inactivas rápido) y timeouts generosos porque la
+      # base entra en modo suspend tras ~5 min de inactividad y despertarla
+      # puede tardar varios segundos, especialmente durante el handshake
+      # TLS del driver de PostgreSQL.
+      maximum-pool-size: 5
+      minimum-idle: 1
+      # Tiempo máximo esperando obtener una conexión del pool. Por defecto
+      # son 30s; se sube a 60s para tolerar el arranque en frío de Neon.
+      connection-timeout: 60000
+      # Al cerrar la aplicación se dan hasta 5s de gracia; suficiente para
+      # evitar warnings y no bloquear el shutdown.
+      validation-timeout: 5000
+      # Se recicla la conexión antes de que Neon la cierre por su cuenta
+      # (mantiene el ciclo del lado cliente, evitando reconexiones caras
+      # justo cuando llega tráfico real).
+      max-lifetime: 900000
+      idle-timeout: 300000
+      keepalive-time: 60000
       data-source-properties:
+        # `stringtype=unspecified` evita que el driver de PostgreSQL envíe
+        # los parámetros String como tipo `bytea` cuando llegan como `null`.
+        # Sin esta propiedad, cualquier consulta con el patrón
+        # `where (:param is null or lower(campo) like lower(...))` falla en
+        # Postgres con `function lower(bytea) does not exist`, porque el
+        # driver infiere el tipo del parámetro nulo como `bytea` en lugar
+        # de `text`.
         stringtype: unspecified
+        # TCP keepalive a nivel de driver para detectar conexiones muertas
+        # después de que Neon corte una idle. Sin esto, Hikari solo se da
+        # cuenta cuando la usa y la transacción falla.
+        tcpKeepAlive: true
+        # Timeouts del socket JDBC: si Neon se demora más de 30s en cada
+        # respuesta se aborta la conexión y se pide otra fresca en vez de
+        # dejarla colgada bloqueando el pool.
+        socketTimeout: 30
+        loginTimeout: 30
+        connectTimeout: 15
 
   jpa:
     hibernate:
