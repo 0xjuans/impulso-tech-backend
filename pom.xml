@@ -148,6 +148,15 @@
             <version>2.28.16</version>
         </dependency>
 
+        <!-- Generación de certificados en PDF (RF-047). OpenPDF es un fork
+             libre de iText 4 con licencia LGPL/MPL, sin las restricciones
+             comerciales de iText 7. -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

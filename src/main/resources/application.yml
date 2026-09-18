@@ -171,6 +171,11 @@ app:
     password: ${APP_ADMIN_PASSWORD:}
     first-name: ${APP_ADMIN_FIRST_NAME:}
     last-name: ${APP_ADMIN_LAST_NAME:}
+  certificates:
+    # URL base a la que se anexará el código de verificación del certificado
+    # al construir el enlace público impreso en el PDF. Debe apuntar al
+    # frontend correspondiente (por ejemplo, https://impulso.tech/verify).
+    verification-base-url: ${APP_CERT_VERIFICATION_URL:http://localhost:4200/verify}
   gamification:
     xp:
       # Puntos de experiencia otorgados por cada evento de aprendizaje.

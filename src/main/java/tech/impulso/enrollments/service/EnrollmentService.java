@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.impulso.admin.dto.PagedResponse;
+import tech.impulso.certificates.service.CertificateService;
 import tech.impulso.common.content.ContentStatus;
 import tech.impulso.common.exception.BusinessException;
 import tech.impulso.common.security.CurrentUserService;
@@ -52,6 +53,7 @@ public class EnrollmentService {
     private final StreakService streakService;
     private final BadgeService badgeService;
     private final NotificationService notificationService;
+    private final CertificateService certificateService;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              LessonCompletionRepository completionRepository,
@@ -61,7 +63,8 @@ public class EnrollmentService {
                              XpService xpService,
                              StreakService streakService,
                              BadgeService badgeService,
-                             NotificationService notificationService) {
+                             NotificationService notificationService,
+                             CertificateService certificateService) {
         this.enrollmentRepository = enrollmentRepository;
         this.completionRepository = completionRepository;
         this.lessonRepository = lessonRepository;
@@ -71,6 +74,7 @@ public class EnrollmentService {
         this.streakService = streakService;
         this.badgeService = badgeService;
         this.notificationService = notificationService;
+        this.certificateService = certificateService;
     }
 
     /**
@@ -169,6 +173,11 @@ public class EnrollmentService {
                     "COURSE",
                     course.getId()
             );
+            // Emitimos el certificado si el curso lo genera. La operación
+            // es idempotente por la restricción única (user_id, course_id),
+            // así que el mismo estudiante nunca recibe dos certificados
+            // del mismo curso.
+            certificateService.issueIfEligible(user, course);
         }
         // Cualquier lección completada (incluso opcional o repetida) cuenta
         // como actividad válida para efectos de la racha de aprendizaje.

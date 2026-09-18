@@ -52,7 +52,11 @@ public class SecurityConfig {
             "/api/auth/verify",
             "/api/auth/verify/resend",
             "/api/auth/password/forgot",
-            "/api/auth/password/reset"
+            "/api/auth/password/reset",
+            // Verificación pública de certificados por código (RF-047):
+            // permitir GET /api/certificates/{code} y /download sin JWT.
+            "/api/certificates/*",
+            "/api/certificates/*/download"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
