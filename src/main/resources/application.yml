@@ -180,6 +180,44 @@ app:
       # Cantidad de XP necesaria para avanzar de nivel (progresión lineal).
       per-level: ${APP_XP_PER_LEVEL:100}
 
+# -----------------------------------------------------------------------------
+# Sandbox de ejecución de código para laboratorios (RF-030 / RF-037).
+#
+# El modo por defecto es `stub`, que rechaza toda ejecución con un mensaje
+# explícito. Un host con Docker daemon accesible al proceso puede activar
+# `docker-cli` para lanzar cada solicitud en un contenedor efímero con la
+# red deshabilitada, filesystem de solo lectura, límites de CPU/memoria y
+# usuario sin privilegios. Nunca se ejecuta código de estudiantes dentro
+# del proceso Spring (§30 del CLAUDE.md).
+# -----------------------------------------------------------------------------
+impulso:
+  code-exec:
+    mode: ${CODE_EXEC_MODE:stub}
+    docker-binary: ${CODE_EXEC_DOCKER_BIN:docker}
+    default-timeout-ms: ${CODE_EXEC_DEFAULT_TIMEOUT_MS:5000}
+    max-timeout-ms: ${CODE_EXEC_MAX_TIMEOUT_MS:15000}
+    max-output-bytes: ${CODE_EXEC_MAX_OUTPUT_BYTES:65536}
+    memory-limit: ${CODE_EXEC_MEMORY:128m}
+    cpus: ${CODE_EXEC_CPUS:0.5}
+    pids-limit: ${CODE_EXEC_PIDS:64}
+    user: ${CODE_EXEC_USER:65534:65534}
+    tmpfs-size: ${CODE_EXEC_TMPFS:32m}
+    languages:
+      python:
+        image: python:3.12-alpine
+        filename: main.py
+        command: [python, "{file}"]
+      javascript:
+        image: node:20-alpine
+        filename: main.js
+        command: [node, "{file}"]
+      java:
+        image: eclipse-temurin:21-jdk-alpine
+        filename: Main.java
+        # `java --source 21` permite ejecutar un archivo Java suelto sin
+        # compilar previamente, siempre que la clase pública se llame Main.
+        command: [java, "--source", "21", "{file}"]
+
 # Endpoints de monitoreo expuestos por Spring Boot Actuator.
 management:
   endpoints:
