@@ -33,18 +33,18 @@ public interface EducationalResourceRepository extends JpaRepository<Educational
      */
     @Query("""
             select r from EducationalResource r
-            where (:search          is null or
-                   lower(r.name)        like lower(concat('%', :search, '%')) or
-                   lower(r.description) like lower(concat('%', :search, '%')) or
-                   lower(r.topic)       like lower(concat('%', :search, '%')) or
-                   lower(r.author)      like lower(concat('%', :search, '%')))
-              and (:type             is null or r.type       = :type)
-              and (:difficulty       is null or r.difficulty = :difficulty)
-              and (:status           is null or r.status     = :status)
-              and (:learningRouteId  is null or r.learningRoute.id = :learningRouteId)
-              and (:courseId         is null or r.course.id        = :courseId)
-              and (:moduleId         is null or r.module.id        = :moduleId)
-              and (:lessonId         is null or r.lesson.id        = :lessonId)
+            where (cast(:search as string) is null or
+                   lower(r.name)        like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.description) like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.topic)       like lower(concat('%', cast(:search as string), '%')) or
+                   lower(r.author)      like lower(concat('%', cast(:search as string), '%')))
+              and (cast(:type as string) is null or r.type = :type)
+              and (cast(:difficulty as string) is null or r.difficulty = :difficulty)
+              and (cast(:status as string) is null or r.status = :status)
+              and (cast(:learningRouteId as long) is null or r.learningRoute.id = :learningRouteId)
+              and (cast(:courseId as long) is null or r.course.id = :courseId)
+              and (cast(:moduleId as long) is null or r.module.id = :moduleId)
+              and (cast(:lessonId as long) is null or r.lesson.id = :lessonId)
             """)
     Page<EducationalResource> search(@Param("search") String search,
                                      @Param("type") ResourceType type,

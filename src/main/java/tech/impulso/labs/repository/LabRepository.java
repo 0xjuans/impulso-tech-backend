@@ -29,13 +29,13 @@ public interface LabRepository extends JpaRepository<Lab, Long> {
      */
     @Query("""
             select l from Lab l
-            where (:search     is null or
-                   lower(l.title)       like lower(concat('%', :search, '%')) or
-                   lower(l.description) like lower(concat('%', :search, '%')))
-              and (:language   is null or l.language = :language)
-              and (:status     is null or l.status   = :status)
-              and (:instructor is null or l.instructor.id = :instructor)
-              and (:courseId   is null or l.course.id     = :courseId)
+            where (cast(:search as string) is null or
+                   lower(l.title)       like lower(concat('%', cast(:search as string), '%')) or
+                   lower(l.description) like lower(concat('%', cast(:search as string), '%')))
+              and (cast(:language as string) is null or l.language = :language)
+              and (cast(:status as string) is null or l.status = :status)
+              and (cast(:instructor as long) is null or l.instructor.id = :instructor)
+              and (cast(:courseId as long) is null or l.course.id = :courseId)
             """)
     Page<Lab> search(@Param("search") String search,
                      @Param("language") String language,

@@ -1,23 +1,58 @@
-# fly.toml app configuration file generated for impulso-tech-backend on 2026-09-09T17:32:08Z
+# =============================================================================
+# Configuracion de despliegue en Fly.io para el backend de Impulso Tech.
 #
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+# Fly.io ejecuta la imagen construida a partir del Dockerfile en una VM
+# ligera ("Machine"). El puerto interno debe coincidir con el que expone
+# la aplicacion (8080). Fly inyecta $PORT como Railway lo hacia, por lo
+# que el ENTRYPOINT del Dockerfile no requiere cambios.
 #
+# Variables sensibles (DATABASE_URL, REDIS_URL, JWT_SECRET, credenciales
+# de correo, etc.) NO deben declararse aqui: se cargan con
+#   fly secrets set NOMBRE=valor
+# =============================================================================
 
-app = 'impulso-tech-backend'
-primary_region = 'gru'
+app = "impulso-tech-backend"
+primary_region = "gru"           # Sao Paulo: menor latencia desde Colombia.
 
 [build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SPRING_PROFILES_ACTIVE = "prod"
+  SERVER_PORT = "8080"
+  # Origenes permitidos para CORS. El backend soporta multiples valores
+  # separados por coma; ajustar cuando cambie el dominio del frontend.
+  APP_CORS_ORIGINS = "https://impulso-tech-frontend.vercel.app,http://localhost:4200"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  # Spring Boot en shared-cpu-1x@512MB tarda ~4-5 min en arrancar
+  # (context init + 45 repos JPA + Hibernate + Flyway). El proxy de Fly
+  # solo espera unos segundos por peticion, por lo que el modelo
+  # scale-to-zero no es viable. Mantenemos siempre 1 maquina encendida.
+  auto_stop_machines = "off"
+  auto_start_machines = false
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    # El healthcheck debe tolerar el startup completo (~5 min). Fly limita
+    # grace_period a 1 minuto para HTTP checks; con protocol = "tcp" se
+    # extiende, pero preferimos HTTP para validar el endpoint real.
+    grace_period = "1m"
+    interval = "30s"
+    method = "GET"
+    timeout = "10s"
+    path = "/actuator/health"
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
-  memory_mb = 512
+  # 1GB de RAM + performance-2x reducen drasticamente el startup de
+  # Spring Boot (shared-cpu-1x@512MB → 4:36 min; performance-2x@1GB → ~40s).
+  # El free tier de Fly permite 3 shared-cpu-1x@256MB; una performance-2x
+  # queda fuera del free tier pero es la unica forma de tener un backend
+  # utilizable con Spring Boot en Fly.
+  size = "shared-cpu-2x"
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 2

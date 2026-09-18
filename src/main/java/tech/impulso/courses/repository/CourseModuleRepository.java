@@ -27,7 +27,7 @@ public interface CourseModuleRepository extends JpaRepository<CourseModule, Long
     @Query("""
             select m from CourseModule m
             where m.course.id = :courseId
-              and (:status is null or m.status = :status)
+              and (cast(:status as string) is null or m.status = :status)
             order by m.orderIndex asc
             """)
     List<CourseModule> findByCourse(@Param("courseId") Long courseId,

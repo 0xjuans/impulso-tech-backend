@@ -26,7 +26,7 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
     @Query("""
             select a from Activity a
             where a.lesson.id = :lessonId
-              and (:status is null or a.status = :status)
+              and (cast(:status as string) is null or a.status = :status)
             order by a.orderIndex asc
             """)
     List<Activity> findByLesson(@Param("lessonId") Long lessonId,

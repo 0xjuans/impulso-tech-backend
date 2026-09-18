@@ -16,6 +16,45 @@ spring:
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pool ajustado al hosting free tier de Neon: pocas conexiones vivas
+      # (Neon corta las inactivas rápido) y timeouts generosos porque la
+      # base entra en modo suspend tras ~5 min de inactividad y despertarla
+      # puede tardar varios segundos, especialmente durante el handshake
+      # TLS del driver de PostgreSQL.
+      maximum-pool-size: 5
+      minimum-idle: 1
+      # Tiempo máximo esperando obtener una conexión del pool. Por defecto
+      # son 30s; se sube a 60s para tolerar el arranque en frío de Neon.
+      connection-timeout: 60000
+      # Al cerrar la aplicación se dan hasta 5s de gracia; suficiente para
+      # evitar warnings y no bloquear el shutdown.
+      validation-timeout: 5000
+      # Se recicla la conexión antes de que Neon la cierre por su cuenta
+      # (mantiene el ciclo del lado cliente, evitando reconexiones caras
+      # justo cuando llega tráfico real).
+      max-lifetime: 900000
+      idle-timeout: 300000
+      keepalive-time: 60000
+      data-source-properties:
+        # `stringtype=unspecified` evita que el driver de PostgreSQL envíe
+        # los parámetros String como tipo `bytea` cuando llegan como `null`.
+        # Sin esta propiedad, cualquier consulta con el patrón
+        # `where (:param is null or lower(campo) like lower(...))` falla en
+        # Postgres con `function lower(bytea) does not exist`, porque el
+        # driver infiere el tipo del parámetro nulo como `bytea` en lugar
+        # de `text`.
+        stringtype: unspecified
+        # TCP keepalive a nivel de driver para detectar conexiones muertas
+        # después de que Neon corte una idle. Sin esto, Hikari solo se da
+        # cuenta cuando la usa y la transacción falla.
+        tcpKeepAlive: true
+        # Timeouts del socket JDBC: si Neon se demora más de 30s en cada
+        # respuesta se aborta la conexión y se pide otra fresca en vez de
+        # dejarla colgada bloqueando el pool.
+        socketTimeout: 30
+        loginTimeout: 30
+        connectTimeout: 15
 
   jpa:
     hibernate:
@@ -132,6 +171,11 @@ app:
     password: ${APP_ADMIN_PASSWORD:}
     first-name: ${APP_ADMIN_FIRST_NAME:}
     last-name: ${APP_ADMIN_LAST_NAME:}
+  certificates:
+    # URL base a la que se anexará el código de verificación del certificado
+    # al construir el enlace público impreso en el PDF. Debe apuntar al
+    # frontend correspondiente (por ejemplo, https://impulso.tech/verify).
+    verification-base-url: ${APP_CERT_VERIFICATION_URL:http://localhost:4200/verify}
   gamification:
     xp:
       # Puntos de experiencia otorgados por cada evento de aprendizaje.
@@ -140,6 +184,44 @@ app:
       course-completed: ${APP_XP_COURSE_COMPLETED:200}
       # Cantidad de XP necesaria para avanzar de nivel (progresión lineal).
       per-level: ${APP_XP_PER_LEVEL:100}
+
+# -----------------------------------------------------------------------------
+# Sandbox de ejecución de código para laboratorios (RF-030 / RF-037).
+#
+# El modo por defecto es `stub`, que rechaza toda ejecución con un mensaje
+# explícito. Un host con Docker daemon accesible al proceso puede activar
+# `docker-cli` para lanzar cada solicitud en un contenedor efímero con la
+# red deshabilitada, filesystem de solo lectura, límites de CPU/memoria y
+# usuario sin privilegios. Nunca se ejecuta código de estudiantes dentro
+# del proceso Spring (§30 del CLAUDE.md).
+# -----------------------------------------------------------------------------
+impulso:
+  code-exec:
+    mode: ${CODE_EXEC_MODE:stub}
+    docker-binary: ${CODE_EXEC_DOCKER_BIN:docker}
+    default-timeout-ms: ${CODE_EXEC_DEFAULT_TIMEOUT_MS:5000}
+    max-timeout-ms: ${CODE_EXEC_MAX_TIMEOUT_MS:15000}
+    max-output-bytes: ${CODE_EXEC_MAX_OUTPUT_BYTES:65536}
+    memory-limit: ${CODE_EXEC_MEMORY:128m}
+    cpus: ${CODE_EXEC_CPUS:0.5}
+    pids-limit: ${CODE_EXEC_PIDS:64}
+    user: ${CODE_EXEC_USER:65534:65534}
+    tmpfs-size: ${CODE_EXEC_TMPFS:32m}
+    languages:
+      python:
+        image: python:3.12-alpine
+        filename: main.py
+        command: [python, "{file}"]
+      javascript:
+        image: node:20-alpine
+        filename: main.js
+        command: [node, "{file}"]
+      java:
+        image: eclipse-temurin:21-jdk-alpine
+        filename: Main.java
+        # `java --source 21` permite ejecutar un archivo Java suelto sin
+        # compilar previamente, siempre que la clase pública se llame Main.
+        command: [java, "--source", "21", "{file}"]
 
 # Endpoints de monitoreo expuestos por Spring Boot Actuator.
 management:

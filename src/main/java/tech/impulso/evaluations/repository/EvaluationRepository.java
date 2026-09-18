@@ -27,7 +27,7 @@ public interface EvaluationRepository extends JpaRepository<Evaluation, Long> {
     @Query("""
             select e from Evaluation e
             where e.lesson.id = :lessonId
-              and (:status is null or e.status = :status)
+              and (cast(:status as string) is null or e.status = :status)
             order by e.orderIndex asc
             """)
     List<Evaluation> findByLesson(@Param("lessonId") Long lessonId,

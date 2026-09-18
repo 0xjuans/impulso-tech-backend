@@ -7,7 +7,8 @@
 # etapa `runtime` sólo copia el JAR y lo ejecuta con un JRE reducido.
 #
 # La aplicación escucha en el puerto expuesto por la variable de entorno
-# SERVER_PORT (Railway lo asigna en $PORT y el compose la mapea a 8080).
+# SERVER_PORT. Fly.io (al igual que Railway) inyecta el puerto asignado
+# en $PORT y el ENTRYPOINT lo mapea a -Dserver.port; en local usa 8080.
 # =============================================================================
 
 # --- Etapa de construcción ---------------------------------------------------
@@ -40,6 +41,6 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=60 -XX:+UseSerialGC -Xss384k -XX:ReservedCod
 ENV SERVER_PORT=8080
 EXPOSE 8080
 
-# Railway inyecta $PORT; lo redirigimos a SERVER_PORT que ya está cableado en
-# application.yml. Cuando no lo define (p. ej. docker run local) usa 8080.
+# Fly.io / Railway inyectan $PORT; lo redirigimos a -Dserver.port. Cuando no
+# lo define (p. ej. docker run local) usa el valor por defecto de SERVER_PORT.
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dserver.port=${PORT:-$SERVER_PORT} -jar /app/app.jar"]
