@@ -186,16 +186,32 @@ app:
       per-level: ${APP_XP_PER_LEVEL:100}
 
 # -----------------------------------------------------------------------------
-# Sandbox de ejecución de código para laboratorios (RF-030 / RF-037).
+# Proveedor de IA de la mascota educativa (RF-017, RF-027).
 #
-# El modo por defecto es `stub`, que rechaza toda ejecución con un mensaje
-# explícito. Un host con Docker daemon accesible al proceso puede activar
-# `docker-cli` para lanzar cada solicitud en un contenedor efímero con la
-# red deshabilitada, filesystem de solo lectura, límites de CPU/memoria y
-# usuario sin privilegios. Nunca se ejecuta código de estudiantes dentro
-# del proceso Spring (§30 del CLAUDE.md).
+# Por defecto se usa `stub`, que devuelve una respuesta local sin llamar a
+# ningún servicio externo. Para habilitar Anthropic Claude en un entorno
+# con credenciales, exporte `AI_PROVIDER=anthropic` y `AI_ANTHROPIC_API_KEY`.
 # -----------------------------------------------------------------------------
 impulso:
+  ai:
+    provider: ${AI_PROVIDER:stub}
+    anthropic:
+      api-key: ${AI_ANTHROPIC_API_KEY:}
+      model: ${AI_ANTHROPIC_MODEL:claude-3-5-haiku-latest}
+      max-tokens: ${AI_ANTHROPIC_MAX_TOKENS:512}
+      base-url: ${AI_ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      version: ${AI_ANTHROPIC_VERSION:2023-06-01}
+      timeout-ms: ${AI_ANTHROPIC_TIMEOUT_MS:15000}
+  # ---------------------------------------------------------------------------
+  # Sandbox de ejecución de código para laboratorios (RF-030 / RF-037).
+  #
+  # El modo por defecto es `stub`, que rechaza toda ejecución con un mensaje
+  # explícito. Un host con Docker daemon accesible al proceso puede activar
+  # `docker-cli` para lanzar cada solicitud en un contenedor efímero con la
+  # red deshabilitada, filesystem de solo lectura, límites de CPU/memoria y
+  # usuario sin privilegios. Nunca se ejecuta código de estudiantes dentro
+  # del proceso Spring.
+  # ---------------------------------------------------------------------------
   code-exec:
     mode: ${CODE_EXEC_MODE:stub}
     docker-binary: ${CODE_EXEC_DOCKER_BIN:docker}
