@@ -44,9 +44,9 @@ public class AiProperties {
         /** Clave privada emitida por Anthropic; nunca debe salir del backend. */
         private String apiKey;
         /** Identificador del modelo a utilizar. */
-        private String model = "claude-3-5-haiku-latest";
+        private String model = "claude-haiku-4-5-20251001";
         /** Tope superior de tokens generados por respuesta. */
-        private int maxTokens = 512;
+        private int maxTokens = 400;
         /** Base URL del endpoint; permite apuntar a un proxy en tests. */
         private String baseUrl = "https://api.anthropic.com";
         /** Versión del contrato de la API. */

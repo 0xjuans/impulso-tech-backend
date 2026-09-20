@@ -3,6 +3,7 @@ package tech.impulso.ai.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -38,6 +39,7 @@ public class AnthropicAiProvider implements AiProvider {
     private final AiProperties.Anthropic config;
     private final RestClient client;
 
+    @Autowired
     public AnthropicAiProvider(AiProperties properties) {
         this(properties, defaultClient(properties.getAnthropic()));
     }
