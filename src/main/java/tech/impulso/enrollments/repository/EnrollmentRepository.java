@@ -170,4 +170,35 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
               and e.status <> tech.impulso.enrollments.entity.EnrollmentStatus.COMPLETADO
             """)
     List<tech.impulso.courses.entity.Course> findInProgressCoursesByUser(@Param("userId") Long userId);
+
+    /**
+     * Últimas inscripciones registradas en cursos del instructor
+     * indicado, con las asociaciones ya cargadas para poder proyectar
+     * el nombre del curso y del estudiante sin lanzar consultas
+     * adicionales por fila (evita N+1 con {@code join fetch}).
+     */
+    @Query("""
+            select e from Enrollment e
+              join fetch e.course c
+              join fetch e.user u
+            where c.instructor.id = :instructorId
+            order by e.startedAt desc
+            """)
+    List<tech.impulso.enrollments.entity.Enrollment> findRecentByInstructor(
+            @Param("instructorId") Long instructorId,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Últimas inscripciones registradas en la plataforma, con curso y
+     * estudiante ya cargados. Se utiliza en el panel del administrador
+     * (RF-033).
+     */
+    @Query("""
+            select e from Enrollment e
+              join fetch e.course c
+              join fetch e.user u
+            order by e.startedAt desc
+            """)
+    List<tech.impulso.enrollments.entity.Enrollment> findRecentAll(
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -10,6 +10,7 @@ import tech.impulso.users.entity.Role;
 import tech.impulso.users.entity.User;
 import tech.impulso.users.entity.UserStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -136,6 +137,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Cuenta cuántos usuarios se encuentran en el estado indicado.
      */
     long countByStatus(UserStatus status);
+
+    /**
+     * Devuelve los últimos usuarios registrados en la plataforma. Se
+     * utiliza en el feed "Últimos registros" del panel del
+     * administrador (RF-033).
+     *
+     * @param pageable objeto de paginación; se espera que fije el
+     *                 tamaño mediante {@code PageRequest.of(0, N)}.
+     */
+    List<User> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     /**
      * Serie temporal de registros diarios de usuarios de los últimos
