@@ -193,6 +193,11 @@ app:
 # con credenciales, exporte `AI_PROVIDER=anthropic` y `AI_ANTHROPIC_API_KEY`.
 # -----------------------------------------------------------------------------
 impulso:
+  ratelimit:
+    # Activa el bloqueo por límite en Redis. En dev puede desactivarse
+    # temporalmente exportando IMPULSO_RATELIMIT_ENABLED=false, pero por
+    # defecto se mantiene encendido para probar el comportamiento real.
+    enabled: ${IMPULSO_RATELIMIT_ENABLED:true}
   ai:
     provider: ${AI_PROVIDER:stub}
     anthropic:
