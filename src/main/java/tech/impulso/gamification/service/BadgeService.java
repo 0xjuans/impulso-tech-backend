@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tech.impulso.enrollments.entity.EnrollmentStatus;
 import tech.impulso.enrollments.repository.EnrollmentRepository;
 import tech.impulso.enrollments.repository.LessonCompletionRepository;
+import tech.impulso.gamification.dto.UserBadgeResponse;
 import tech.impulso.gamification.entity.Badge;
 import tech.impulso.gamification.entity.BadgeTrigger;
 import tech.impulso.gamification.entity.UserBadge;
@@ -103,14 +104,23 @@ public class BadgeService {
     }
 
     /**
-     * Consulta las insignias obtenidas por el usuario indicado.
+     * Consulta las insignias obtenidas por el usuario indicado y las
+     * transforma a DTO dentro de la misma transacción.
+     *
+     * <p>El mapeo se hace aquí adrede: {@code UserBadge.badge} es
+     * {@code LAZY} y la aplicación tiene {@code open-in-view=false} por
+     * seguridad, así que exponer la entidad al controlador provocaría
+     * un {@code LazyInitializationException}. Retornando ya el DTO se
+     * fuerza la carga de la asociación con la sesión aún abierta.</p>
      *
      * @param userId identificador del usuario.
      * @return insignias otorgadas, más recientes primero.
      */
     @Transactional(readOnly = true)
-    public List<UserBadge> listUserBadges(Long userId) {
-        return userBadgeRepository.findByUserIdOrderByAwardedAtDesc(userId);
+    public List<UserBadgeResponse> listUserBadges(Long userId) {
+        return userBadgeRepository.findByUserIdOrderByAwardedAtDesc(userId).stream()
+                .map(UserBadgeResponse::from)
+                .toList();
     }
 
     /**

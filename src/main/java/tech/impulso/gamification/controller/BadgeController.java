@@ -53,8 +53,6 @@ public class BadgeController {
     @GetMapping("/users/me/badges")
     public ResponseEntity<List<UserBadgeResponse>> listMine() {
         User user = currentUserService.requireAuthenticatedUser();
-        return ResponseEntity.ok(badgeService.listUserBadges(user.getId()).stream()
-                .map(UserBadgeResponse::from)
-                .toList());
+        return ResponseEntity.ok(badgeService.listUserBadges(user.getId()));
     }
 }
