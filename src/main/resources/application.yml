@@ -218,7 +218,12 @@ impulso:
   # del proceso Spring.
   # ---------------------------------------------------------------------------
   code-exec:
-    mode: ${CODE_EXEC_MODE:stub}
+    # Valores admitidos: `stub` (rechaza toda ejecución), `docker-cli` (Docker
+    # local con aislamiento estricto) o `piston` (sandbox público remoto en
+    # emkc.org). El default es `piston` porque el hosting actual no expone
+    # Docker; para volver al comportamiento seguro por defecto sin sandbox
+    # externo, defina CODE_EXEC_MODE=stub.
+    mode: ${CODE_EXEC_MODE:piston}
     docker-binary: ${CODE_EXEC_DOCKER_BIN:docker}
     default-timeout-ms: ${CODE_EXEC_DEFAULT_TIMEOUT_MS:5000}
     max-timeout-ms: ${CODE_EXEC_MAX_TIMEOUT_MS:15000}
@@ -228,6 +233,10 @@ impulso:
     pids-limit: ${CODE_EXEC_PIDS:64}
     user: ${CODE_EXEC_USER:65534:65534}
     tmpfs-size: ${CODE_EXEC_TMPFS:32m}
+    piston:
+      base-url: ${CODE_EXEC_PISTON_URL:https://emkc.org/api/v2/piston}
+      connect-timeout-ms: ${CODE_EXEC_PISTON_CONNECT_MS:5000}
+      read-timeout-ms: ${CODE_EXEC_PISTON_READ_MS:20000}
     languages:
       python:
         image: python:3.12-alpine

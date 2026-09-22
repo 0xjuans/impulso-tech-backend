@@ -27,3 +27,9 @@ logging:
   level:
     root: WARN
     tech.impulso: INFO
+
+# Forzamos el modo `stub` en tests para no depender de Docker ni de la
+# red al arrancar el contexto de Spring en la suite de pruebas.
+impulso:
+  code-exec:
+    mode: stub

@@ -29,7 +29,9 @@ public class CodeExecutionProperties {
         /** Rechaza toda ejecución con un mensaje explícito. */
         STUB,
         /** Ejecuta cada solicitud en un contenedor Docker efímero. */
-        DOCKER_CLI
+        DOCKER_CLI,
+        /** Delegar la ejecución al sandbox público Piston. */
+        PISTON
     }
 
     /** Modo activo del sandbox. */
@@ -64,6 +66,32 @@ public class CodeExecutionProperties {
 
     /** Catálogo de lenguajes soportados indexado por identificador. */
     private Map<String, LanguageProfile> languages = new HashMap<>();
+
+    /** Configuración específica para el modo Piston. */
+    private Piston piston = new Piston();
+
+    /**
+     * Configuración del cliente al sandbox público de Piston.
+     *
+     * <p>Piston expone {@code POST {baseUrl}/execute} para lanzar código
+     * en múltiples lenguajes sin autenticación. Se usa como plan B cuando
+     * el runner con Docker no está disponible (por ejemplo, en Fly.io).</p>
+     */
+    public static class Piston {
+        private String baseUrl = "https://emkc.org/api/v2/piston";
+        private int connectTimeoutMs = 5_000;
+        private int readTimeoutMs = 20_000;
+
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public int getConnectTimeoutMs() { return connectTimeoutMs; }
+        public void setConnectTimeoutMs(int connectTimeoutMs) { this.connectTimeoutMs = connectTimeoutMs; }
+        public int getReadTimeoutMs() { return readTimeoutMs; }
+        public void setReadTimeoutMs(int readTimeoutMs) { this.readTimeoutMs = readTimeoutMs; }
+    }
+
+    public Piston getPiston() { return piston; }
+    public void setPiston(Piston piston) { this.piston = piston; }
 
     /**
      * Perfil de lenguaje soportado por el sandbox.
