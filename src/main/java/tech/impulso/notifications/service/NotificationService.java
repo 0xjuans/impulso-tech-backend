@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tech.impulso.admin.dto.PagedResponse;
 import tech.impulso.common.exception.BusinessException;
 import tech.impulso.common.security.CurrentUserService;
@@ -33,11 +35,14 @@ public class NotificationService {
 
     private final NotificationRepository repository;
     private final CurrentUserService currentUserService;
+    private final NotificationSseBroadcaster sseBroadcaster;
 
     public NotificationService(NotificationRepository repository,
-                               CurrentUserService currentUserService) {
+                               CurrentUserService currentUserService,
+                               NotificationSseBroadcaster sseBroadcaster) {
         this.repository = repository;
         this.currentUserService = currentUserService;
+        this.sseBroadcaster = sseBroadcaster;
     }
 
     /**
@@ -64,7 +69,24 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRelatedType(relatedType);
         notification.setRelatedId(relatedId);
-        repository.save(notification);
+        Notification saved = repository.save(notification);
+
+        // Empujamos la notificación por SSE únicamente después de que la
+        // transacción confirme, para no entregar al cliente eventos que
+        // luego podrían revertirse. Si no hay transacción activa, se
+        // publica de inmediato.
+        Long recipientId = user.getId();
+        NotificationResponse payload = NotificationResponse.from(saved);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sseBroadcaster.broadcast(recipientId, payload);
+                }
+            });
+        } else {
+            sseBroadcaster.broadcast(recipientId, payload);
+        }
     }
 
     /**
