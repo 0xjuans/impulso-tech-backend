@@ -219,11 +219,13 @@ impulso:
   # ---------------------------------------------------------------------------
   code-exec:
     # Valores admitidos: `stub` (rechaza toda ejecución), `docker-cli` (Docker
-    # local con aislamiento estricto) o `piston` (sandbox público remoto en
-    # emkc.org). El default es `piston` porque el hosting actual no expone
-    # Docker; para volver al comportamiento seguro por defecto sin sandbox
-    # externo, defina CODE_EXEC_MODE=stub.
-    mode: ${CODE_EXEC_MODE:piston}
+    # local con aislamiento estricto), `judge0` (Judge0 CE vía RapidAPI, requiere
+    # CODE_EXEC_JUDGE0_KEY), `codex` (sandbox público en api.codex.jaagrav.in,
+    # intermitente) o `piston` (sandbox público en emkc.org, hoy en whitelist).
+    # El default es `judge0` por ser el proveedor gratuito más estable, siempre
+    # que la clave esté configurada. Si no hay clave, defina CODE_EXEC_MODE=stub
+    # para desactivar la ejecución con un mensaje explícito.
+    mode: ${CODE_EXEC_MODE:judge0}
     docker-binary: ${CODE_EXEC_DOCKER_BIN:docker}
     default-timeout-ms: ${CODE_EXEC_DEFAULT_TIMEOUT_MS:5000}
     max-timeout-ms: ${CODE_EXEC_MAX_TIMEOUT_MS:15000}
@@ -237,6 +239,16 @@ impulso:
       base-url: ${CODE_EXEC_PISTON_URL:https://emkc.org/api/v2/piston}
       connect-timeout-ms: ${CODE_EXEC_PISTON_CONNECT_MS:5000}
       read-timeout-ms: ${CODE_EXEC_PISTON_READ_MS:20000}
+    codex:
+      base-url: ${CODE_EXEC_CODEX_URL:https://api.codex.jaagrav.in}
+      connect-timeout-ms: ${CODE_EXEC_CODEX_CONNECT_MS:5000}
+      read-timeout-ms: ${CODE_EXEC_CODEX_READ_MS:20000}
+    judge0:
+      base-url: ${CODE_EXEC_JUDGE0_URL:https://judge0-ce.p.rapidapi.com}
+      rapid-api-host: ${CODE_EXEC_JUDGE0_HOST:judge0-ce.p.rapidapi.com}
+      api-key: ${CODE_EXEC_JUDGE0_KEY:}
+      connect-timeout-ms: ${CODE_EXEC_JUDGE0_CONNECT_MS:5000}
+      read-timeout-ms: ${CODE_EXEC_JUDGE0_READ_MS:25000}
     languages:
       python:
         image: python:3.12-alpine

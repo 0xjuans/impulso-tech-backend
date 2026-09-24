@@ -31,7 +31,11 @@ public class CodeExecutionProperties {
         /** Ejecuta cada solicitud en un contenedor Docker efímero. */
         DOCKER_CLI,
         /** Delegar la ejecución al sandbox público Piston. */
-        PISTON
+        PISTON,
+        /** Delegar la ejecución al sandbox público CodeX. */
+        CODEX,
+        /** Delegar la ejecución a Judge0 CE (vía RapidAPI). */
+        JUDGE0
     }
 
     /** Modo activo del sandbox. */
@@ -92,6 +96,65 @@ public class CodeExecutionProperties {
 
     public Piston getPiston() { return piston; }
     public void setPiston(Piston piston) { this.piston = piston; }
+
+    /** Configuración específica para el modo CodeX. */
+    private Codex codex = new Codex();
+
+    /**
+     * Configuración del cliente al sandbox público de CodeX.
+     *
+     * <p>CodeX expone {@code POST {baseUrl}/} y devuelve la salida del
+     * programa junto con posibles errores de compilación. Es la
+     * alternativa recomendada tras el cierre de la API pública de
+     * Piston.</p>
+     */
+    public static class Codex {
+        private String baseUrl = "https://api.codex.jaagrav.in";
+        private int connectTimeoutMs = 5_000;
+        private int readTimeoutMs = 20_000;
+
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public int getConnectTimeoutMs() { return connectTimeoutMs; }
+        public void setConnectTimeoutMs(int connectTimeoutMs) { this.connectTimeoutMs = connectTimeoutMs; }
+        public int getReadTimeoutMs() { return readTimeoutMs; }
+        public void setReadTimeoutMs(int readTimeoutMs) { this.readTimeoutMs = readTimeoutMs; }
+    }
+
+    public Codex getCodex() { return codex; }
+    public void setCodex(Codex codex) { this.codex = codex; }
+
+    /** Configuración específica para el modo Judge0. */
+    private Judge0 judge0 = new Judge0();
+
+    /**
+     * Configuración del cliente al sandbox Judge0 CE (RapidAPI).
+     *
+     * <p>La clave API es obligatoria y debe suministrarse mediante el
+     * secreto {@code CODE_EXEC_JUDGE0_KEY}. La URL base y el host
+     * apuntan por defecto al mirror oficial hospedado en RapidAPI.</p>
+     */
+    public static class Judge0 {
+        private String baseUrl = "https://judge0-ce.p.rapidapi.com";
+        private String rapidApiHost = "judge0-ce.p.rapidapi.com";
+        private String apiKey = "";
+        private int connectTimeoutMs = 5_000;
+        private int readTimeoutMs = 25_000;
+
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getRapidApiHost() { return rapidApiHost; }
+        public void setRapidApiHost(String rapidApiHost) { this.rapidApiHost = rapidApiHost; }
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+        public int getConnectTimeoutMs() { return connectTimeoutMs; }
+        public void setConnectTimeoutMs(int connectTimeoutMs) { this.connectTimeoutMs = connectTimeoutMs; }
+        public int getReadTimeoutMs() { return readTimeoutMs; }
+        public void setReadTimeoutMs(int readTimeoutMs) { this.readTimeoutMs = readTimeoutMs; }
+    }
+
+    public Judge0 getJudge0() { return judge0; }
+    public void setJudge0(Judge0 judge0) { this.judge0 = judge0; }
 
     /**
      * Perfil de lenguaje soportado por el sandbox.
