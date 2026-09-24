@@ -64,7 +64,7 @@ public class UserPreferences {
 
     /** Recibe también las notificaciones por correo electrónico. */
     @Column(name = "notify_by_email", nullable = false)
-    private boolean notifyByEmail = false;
+    private boolean notifyByEmail = true;
 
     /** Utiliza la mascota virtual con inteligencia artificial. */
     @Column(name = "ai_mascot_enabled", nullable = false)
