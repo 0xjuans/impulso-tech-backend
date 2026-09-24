@@ -48,6 +48,9 @@ public class NotificationSseBroadcaster {
     /** Nombre del evento SSE para el heartbeat de mantenimiento. */
     public static final String EVENT_HEARTBEAT = "heartbeat";
 
+    /** Nombre del evento SSE que representa un mensaje directo entrante. */
+    public static final String EVENT_MESSAGE = "message";
+
     private final Map<Long, List<SseEmitter>> emittersByUser = new ConcurrentHashMap<>();
 
     /**
@@ -87,6 +90,19 @@ public class NotificationSseBroadcaster {
      * @param notification notificación a entregar.
      */
     public void broadcast(Long userId, NotificationResponse notification) {
+        broadcastEvent(userId, EVENT_NOTIFICATION, notification);
+    }
+
+    /**
+     * Empuja un evento SSE arbitrario al usuario indicado. Se emplea
+     * para tipos de eventos que no son notificaciones del centro (por
+     * ejemplo, mensajes directos que actualizan el inbox en tiempo real).
+     *
+     * @param userId    destinatario del evento.
+     * @param eventName nombre del evento SSE que reconocerá el cliente.
+     * @param payload   objeto que se serializará como JSON.
+     */
+    public void broadcastEvent(Long userId, String eventName, Object payload) {
         List<SseEmitter> emitters = emittersByUser.get(userId);
         if (emitters == null || emitters.isEmpty()) {
             return;
@@ -94,10 +110,11 @@ public class NotificationSseBroadcaster {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name(EVENT_NOTIFICATION)
-                        .data(notification));
+                        .name(eventName)
+                        .data(payload));
             } catch (Exception e) {
-                log.debug("Se cerró un emisor SSE por error al enviar notificación al usuario {}", userId);
+                log.debug("Se cerró un emisor SSE por error al enviar evento '{}' al usuario {}",
+                        eventName, userId);
                 remove(userId, emitter);
                 try {
                     emitter.complete();

@@ -45,19 +45,22 @@ public class MessagingService {
     private final CurrentUserService currentUserService;
     private final tech.impulso.preferences.repository.UserPreferencesRepository preferencesRepository;
     private final tech.impulso.auth.service.EmailService emailService;
+    private final tech.impulso.notifications.service.NotificationSseBroadcaster sseBroadcaster;
 
     public MessagingService(MessageConversationRepository conversationRepository,
                             MessageRepository messageRepository,
                             UserRepository userRepository,
                             CurrentUserService currentUserService,
                             tech.impulso.preferences.repository.UserPreferencesRepository preferencesRepository,
-                            tech.impulso.auth.service.EmailService emailService) {
+                            tech.impulso.auth.service.EmailService emailService,
+                            tech.impulso.notifications.service.NotificationSseBroadcaster sseBroadcaster) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
         this.preferencesRepository = preferencesRepository;
         this.emailService = emailService;
+        this.sseBroadcaster = sseBroadcaster;
     }
 
     /**
@@ -139,8 +142,48 @@ public class MessagingService {
         conversationRepository.save(conversation);
 
         notifyRecipientByEmail(conversation, user, message);
+        broadcastRealtime(conversation, user, message);
 
         return MessageResponse.from(message);
+    }
+
+    /**
+     * Empuja el mensaje recién guardado al destinatario por SSE tras el
+     * commit, para que su inbox se actualice sin recargar. Si el
+     * emisor SSE falla la operación es silenciosa: el mensaje ya quedó
+     * persistido y el destinatario lo verá al abrir la conversación.
+     */
+    private void broadcastRealtime(MessageConversation conversation,
+                                   User sender,
+                                   Message message) {
+        User recipient = conversation.getParticipantLow().getId().equals(sender.getId())
+                ? conversation.getParticipantHigh()
+                : conversation.getParticipantLow();
+        if (recipient == null || recipient.getId().equals(sender.getId())) {
+            return;
+        }
+        Long recipientId = recipient.getId();
+        MessageResponse payload = MessageResponse.from(message);
+
+        if (org.springframework.transaction.support.TransactionSynchronizationManager
+                .isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .registerSynchronization(
+                            new org.springframework.transaction.support.TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() {
+                                    sseBroadcaster.broadcastEvent(
+                                            recipientId,
+                                            tech.impulso.notifications.service.NotificationSseBroadcaster.EVENT_MESSAGE,
+                                            payload);
+                                }
+                            });
+        } else {
+            sseBroadcaster.broadcastEvent(
+                    recipientId,
+                    tech.impulso.notifications.service.NotificationSseBroadcaster.EVENT_MESSAGE,
+                    payload);
+        }
     }
 
     /**
