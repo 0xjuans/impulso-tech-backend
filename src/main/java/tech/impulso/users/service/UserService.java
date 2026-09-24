@@ -4,13 +4,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import tech.impulso.auth.dto.UserResponse;
 import tech.impulso.common.exception.BusinessException;
 import tech.impulso.common.security.CurrentUserService;
 import tech.impulso.users.dto.ChangePasswordRequest;
 import tech.impulso.users.dto.UpdateProfileRequest;
+import tech.impulso.users.dto.UserDirectoryResult;
 import tech.impulso.users.entity.User;
 import tech.impulso.users.repository.UserRepository;
+
+import java.util.List;
 
 /**
  * Servicio encargado de las operaciones que el usuario autenticado puede
@@ -104,5 +109,39 @@ public class UserService {
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    /** Tope superior de resultados devueltos por el directorio. */
+    private static final int MAX_DIRECTORY_RESULTS = 10;
+
+    /** Longitud mínima aceptada del término de búsqueda para evitar cargas innecesarias. */
+    private static final int MIN_QUERY_LENGTH = 2;
+
+    /**
+     * Busca usuarios activos por nombre de usuario, nombre o apellido
+     * para poblar el directorio consumido desde la mensajería directa
+     * (RF-061). El usuario que hace la búsqueda queda excluido de los
+     * resultados y no se devuelven cuentas inactivas.
+     *
+     * @param query término a buscar; si está vacío o es más corto que
+     *              el mínimo se devuelve una lista vacía.
+     * @param limit cantidad máxima de resultados solicitada.
+     * @return coincidencias listas para renderizar.
+     */
+    @Transactional(readOnly = true)
+    public List<UserDirectoryResult> searchDirectory(String query, int limit) {
+        if (query == null) return List.of();
+        String trimmed = query.trim();
+        if (trimmed.length() < MIN_QUERY_LENGTH) return List.of();
+
+        User me = currentUserService.requireAuthenticatedUser();
+        int bounded = Math.max(1, Math.min(limit, MAX_DIRECTORY_RESULTS));
+        Pageable pageable = PageRequest.of(0, bounded);
+        String term = "%" + trimmed.toLowerCase() + "%";
+
+        return userRepository.searchDirectory(term, me.getId(), pageable)
+                .stream()
+                .map(UserDirectoryResult::from)
+                .toList();
     }
 }

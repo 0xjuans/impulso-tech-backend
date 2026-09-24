@@ -162,4 +162,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
             order by day
             """, nativeQuery = true)
     java.util.List<Object[]> countRegistrationsByDay(@org.springframework.data.repository.query.Param("days") int days);
+
+    /**
+     * Busca usuarios activos cuyo nombre de usuario, nombre o apellido
+     * contengan el término de búsqueda (comparación sin distinguir
+     * mayúsculas). Excluye al usuario indicado para que no aparezca en
+     * sus propios resultados. Se usa por el directorio de usuarios de
+     * mensajería directa (RF-061).
+     *
+     * @param term       texto a buscar (ya normalizado con {@code %} donde aplique).
+     * @param excludeId  identificador del usuario que hace la búsqueda.
+     * @param pageable   configuración de paginación y límite.
+     * @return usuarios coincidentes.
+     */
+    @Query("""
+            select u
+            from User u
+            where u.id <> :excludeId
+              and u.status = tech.impulso.users.entity.UserStatus.ACTIVA
+              and (
+                lower(u.username) like :term
+                or lower(u.firstName) like :term
+                or lower(u.lastName) like :term
+              )
+            order by u.username asc
+            """)
+    List<User> searchDirectory(
+            @Param("term") String term,
+            @Param("excludeId") Long excludeId,
+            Pageable pageable);
 }
