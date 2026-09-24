@@ -43,15 +43,21 @@ public class MessagingService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
+    private final tech.impulso.preferences.repository.UserPreferencesRepository preferencesRepository;
+    private final tech.impulso.auth.service.EmailService emailService;
 
     public MessagingService(MessageConversationRepository conversationRepository,
                             MessageRepository messageRepository,
                             UserRepository userRepository,
-                            CurrentUserService currentUserService) {
+                            CurrentUserService currentUserService,
+                            tech.impulso.preferences.repository.UserPreferencesRepository preferencesRepository,
+                            tech.impulso.auth.service.EmailService emailService) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
+        this.preferencesRepository = preferencesRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -131,7 +137,67 @@ public class MessagingService {
 
         conversation.setLastMessageAt(message.getSentAt());
         conversationRepository.save(conversation);
+
+        notifyRecipientByEmail(conversation, user, message);
+
         return MessageResponse.from(message);
+    }
+
+    /**
+     * Envía un correo al destinatario del mensaje si mantiene activa la
+     * preferencia {@code notifyByEmail}. El envío se difiere a
+     * {@code afterCommit} para no bloquear la transacción y para que un
+     * fallo del proveedor SMTP nunca cancele el guardado del mensaje.
+     */
+    private void notifyRecipientByEmail(MessageConversation conversation,
+                                        User sender,
+                                        Message message) {
+        User recipient = conversation.getParticipantLow().getId().equals(sender.getId())
+                ? conversation.getParticipantHigh()
+                : conversation.getParticipantLow();
+        if (recipient == null || recipient.getEmail() == null || recipient.getEmail().isBlank()) {
+            return;
+        }
+        // Un usuario nunca se envía correo a sí mismo (aunque el flujo
+        // actual no permite auto-conversaciones, la guardia refuerza la
+        // regla ante cambios futuros del dominio).
+        if (recipient.getId().equals(sender.getId())) {
+            return;
+        }
+        boolean wantsEmail = preferencesRepository.findById(recipient.getId())
+                .map(p -> p.isNotifyByEmail())
+                .orElse(false);
+        if (!wantsEmail) {
+            return;
+        }
+
+        String recipientEmail = recipient.getEmail();
+        String recipientName = displayName(recipient);
+        String senderName = displayName(sender);
+        String preview = truncate(message.getContent(), 240);
+
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                emailService.sendDirectMessageEmail(
+                                        recipientEmail, recipientName, senderName, preview);
+                            }
+                        });
+    }
+
+    private static String displayName(User u) {
+        String first = u.getFirstName() != null ? u.getFirstName() : "";
+        String last = u.getLastName() != null ? u.getLastName() : "";
+        String composed = (first + " " + last).trim();
+        return composed.isEmpty() ? u.getUsername() : composed;
+    }
+
+    private static String truncate(String text, int max) {
+        if (text == null) return "";
+        if (text.length() <= max) return text;
+        return text.substring(0, max).trim() + "…";
     }
 
     /**

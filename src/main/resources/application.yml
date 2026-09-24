@@ -162,6 +162,7 @@ app:
     # enviados por correo. Deben apuntar al frontend correspondiente.
     verification-base-url: ${MAIL_VERIFICATION_URL:http://localhost:4200/auth/verify}
     password-reset-base-url: ${MAIL_PASSWORD_RESET_URL:http://localhost:4200/auth/reset-password}
+    messages-base-url: ${MAIL_MESSAGES_URL:http://localhost:4200/student/messages}
   admin:
     # Credenciales utilizadas por AdminBootstrap para crear el primer
     # administrador si aún no existe ninguno. Deben suministrarse
