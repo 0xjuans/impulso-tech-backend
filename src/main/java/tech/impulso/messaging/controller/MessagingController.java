@@ -78,4 +78,15 @@ public class MessagingController {
         service.markAsRead(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Devuelve el conteo total de mensajes sin leer del usuario
+     * autenticado. Alimenta el badge global del nav "Mensajes".
+     */
+    @Operation(summary = "Contar mis mensajes sin leer",
+            description = "Suma los mensajes sin leer de todas las conversaciones del usuario.")
+    @GetMapping("/unread-count")
+    public ResponseEntity<java.util.Map<String, Long>> unreadCount() {
+        return ResponseEntity.ok(java.util.Map.of("unread", service.countMyUnread()));
+    }
 }

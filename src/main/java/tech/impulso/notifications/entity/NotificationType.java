@@ -31,5 +31,8 @@ public enum NotificationType {
      * Notificación genérica no vinculada a un evento del sistema (por
      * ejemplo, mensajes administrativos o recordatorios).
      */
-    GENERIC
+    GENERIC,
+
+    /** El usuario recibió un nuevo mensaje directo (RF-061). */
+    MESSAGE_RECEIVED
 }

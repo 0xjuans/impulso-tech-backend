@@ -195,7 +195,9 @@ public class NotificationService {
             case BADGE_AWARDED, LEVEL_UP -> prefs.isNotifyAchievements();
             case COURSE_COMPLETED, STREAK_MILESTONE -> prefs.isNotifyProgress();
             case EVALUATION_PASSED, EVALUATION_FAILED -> prefs.isNotifyEvaluations();
-            case GENERIC -> true;
+            // Los mensajes directos son puntuales y esperados: se
+            // muestran siempre en la campana, igual que un aviso genérico.
+            case GENERIC, MESSAGE_RECEIVED -> true;
         };
     }
 }

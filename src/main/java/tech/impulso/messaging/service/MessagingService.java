@@ -46,6 +46,7 @@ public class MessagingService {
     private final tech.impulso.preferences.repository.UserPreferencesRepository preferencesRepository;
     private final tech.impulso.auth.service.EmailService emailService;
     private final tech.impulso.notifications.service.NotificationSseBroadcaster sseBroadcaster;
+    private final tech.impulso.notifications.service.NotificationService notificationService;
 
     public MessagingService(MessageConversationRepository conversationRepository,
                             MessageRepository messageRepository,
@@ -53,7 +54,8 @@ public class MessagingService {
                             CurrentUserService currentUserService,
                             tech.impulso.preferences.repository.UserPreferencesRepository preferencesRepository,
                             tech.impulso.auth.service.EmailService emailService,
-                            tech.impulso.notifications.service.NotificationSseBroadcaster sseBroadcaster) {
+                            tech.impulso.notifications.service.NotificationSseBroadcaster sseBroadcaster,
+                            tech.impulso.notifications.service.NotificationService notificationService) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
@@ -61,6 +63,7 @@ public class MessagingService {
         this.preferencesRepository = preferencesRepository;
         this.emailService = emailService;
         this.sseBroadcaster = sseBroadcaster;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -143,8 +146,35 @@ public class MessagingService {
 
         notifyRecipientByEmail(conversation, user, message);
         broadcastRealtime(conversation, user, message);
+        pushNotificationToRecipient(conversation, user, message);
 
         return MessageResponse.from(message);
+    }
+
+    /**
+     * Publica una notificación en el centro del destinatario para que
+     * el aviso quede visible en la campana aunque no tenga el inbox
+     * abierto. La notificación referencia la conversación por
+     * {@code relatedType=MESSAGE} y {@code relatedId=conversationId}.
+     */
+    private void pushNotificationToRecipient(MessageConversation conversation,
+                                             User sender,
+                                             Message message) {
+        User recipient = conversation.getParticipantLow().getId().equals(sender.getId())
+                ? conversation.getParticipantHigh()
+                : conversation.getParticipantLow();
+        if (recipient == null || recipient.getId().equals(sender.getId())) {
+            return;
+        }
+        String senderName = displayName(sender);
+        String preview = truncate(message.getContent(), 140);
+        notificationService.notify(
+                recipient,
+                tech.impulso.notifications.entity.NotificationType.MESSAGE_RECEIVED,
+                "Nuevo mensaje de " + senderName,
+                preview,
+                "MESSAGE",
+                conversation.getId());
     }
 
     /**
@@ -241,6 +271,17 @@ public class MessagingService {
         if (text == null) return "";
         if (text.length() <= max) return text;
         return text.substring(0, max).trim() + "…";
+    }
+
+    /**
+     * Cuenta el total de mensajes no leídos del usuario autenticado a
+     * lo largo de todas sus conversaciones. Alimenta el badge del nav
+     * "Mensajes" que refleja la cantidad global sin abrir el inbox.
+     */
+    @Transactional(readOnly = true)
+    public long countMyUnread() {
+        User user = currentUserService.requireAuthenticatedUser();
+        return messageRepository.countUnreadForUser(user.getId());
     }
 
     /**

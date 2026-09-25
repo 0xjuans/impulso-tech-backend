@@ -46,6 +46,19 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
                         @Param("userId") Long userId);
 
     /**
+     * Cuenta el total de mensajes no leídos del usuario a lo largo de
+     * todas sus conversaciones. Se usa para el badge global del nav.
+     */
+    @Query("""
+            select count(m) from Message m
+            where m.sender.id <> :userId
+              and m.readAt is null
+              and (m.conversation.participantLow.id = :userId
+                   or m.conversation.participantHigh.id = :userId)
+            """)
+    long countUnreadForUser(@Param("userId") Long userId);
+
+    /**
      * Marca como leídos todos los mensajes de la conversación cuyo
      * emisor no sea el usuario indicado. Se ejecuta cuando el usuario
      * abre la conversación.
