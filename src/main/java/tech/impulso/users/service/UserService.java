@@ -11,6 +11,7 @@ import tech.impulso.common.exception.BusinessException;
 import tech.impulso.common.security.CurrentUserService;
 import tech.impulso.users.dto.ChangePasswordRequest;
 import tech.impulso.users.dto.UpdateProfileRequest;
+import tech.impulso.users.dto.UpdateSignatureRequest;
 import tech.impulso.users.dto.UserDirectoryResult;
 import tech.impulso.users.entity.User;
 import tech.impulso.users.repository.UserRepository;
@@ -109,6 +110,36 @@ public class UserService {
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+    }
+
+    /**
+     * Guarda la firma del instructor autenticado a partir del data URL
+     * enviado por el frontend. La validación de formato y tamaño la
+     * realiza la propia {@link UpdateSignatureRequest}, aquí sólo
+     * persistimos el valor limpio.
+     *
+     * @param request payload con el data URL de la firma.
+     * @return perfil actualizado del usuario.
+     */
+    @Transactional
+    public UserResponse updateSignature(UpdateSignatureRequest request) {
+        User user = currentUserService.requireAuthenticatedUser();
+        user.setSignatureImageUrl(request.signatureImage().trim());
+        userRepository.save(user);
+        return UserResponse.from(user);
+    }
+
+    /**
+     * Elimina la firma cargada por el instructor autenticado. Los
+     * certificados posteriores se emitirán con la línea vacía sobre el
+     * nombre del instructor.
+     */
+    @Transactional
+    public UserResponse deleteSignature() {
+        User user = currentUserService.requireAuthenticatedUser();
+        user.setSignatureImageUrl(null);
+        userRepository.save(user);
+        return UserResponse.from(user);
     }
 
     /** Tope superior de resultados devueltos por el directorio. */

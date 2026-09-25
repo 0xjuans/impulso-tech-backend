@@ -72,6 +72,14 @@ public class User {
     @Column(name = "profile_photo_url", length = 500)
     private String profilePhotoUrl;
 
+    /**
+     * Firma del instructor codificada como data URL base64 (PNG o
+     * JPEG). Se pinta sobre la línea de firma de los certificados
+     * emitidos para sus cursos. Puede ser nula si aún no la cargó.
+     */
+    @Column(name = "signature_image_url", columnDefinition = "text")
+    private String signatureImageUrl;
+
     /** Rol funcional asignado al usuario. */
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 30)
@@ -184,6 +192,14 @@ public class User {
 
     public void setProfilePhotoUrl(String profilePhotoUrl) {
         this.profilePhotoUrl = profilePhotoUrl;
+    }
+
+    public String getSignatureImageUrl() {
+        return signatureImageUrl;
+    }
+
+    public void setSignatureImageUrl(String signatureImageUrl) {
+        this.signatureImageUrl = signatureImageUrl;
     }
 
     public Role getRole() {
