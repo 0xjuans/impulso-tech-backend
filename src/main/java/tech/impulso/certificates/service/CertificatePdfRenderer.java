@@ -4,11 +4,14 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import tech.impulso.certificates.entity.Certificate;
 import tech.impulso.courses.entity.Course;
@@ -17,6 +20,7 @@ import tech.impulso.users.entity.User;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Locale;
 
 /**
@@ -24,19 +28,19 @@ import java.util.Locale;
  *
  * <p>El certificado se dibuja con posicionamiento absoluto sobre una
  * página A4 horizontal para garantizar que todo el contenido cabe en
- * una sola página sin importar la longitud del texto. La composición
- * incluye:</p>
- * <ul>
- *   <li>Marco doble con acento naranja y filete interior dorado.</li>
- *   <li>Wordmark superior "Impulso.tech" con estilo terminal.</li>
- *   <li>Título grande, nombre del estudiante y curso jerarquizados.</li>
- *   <li>Bloque inferior con metadatos, firma del instructor y código
- *       de verificación en línea monoespaciada.</li>
- *   <li>Ornamentos decorativos en las esquinas.</li>
- * </ul>
+ * una sola página. Está pensado para verse como un diploma físico:
+ * fondo tipo pergamino, doble marco, ornamentos en las esquinas,
+ * jerarquía tipográfica clara y bloque inferior con firma, fecha y
+ * código de verificación.</p>
+ *
+ * <p>Si el instructor del curso tiene una firma cargada, se dibuja
+ * sobre la línea de firma; de lo contrario se muestra únicamente el
+ * nombre del instructor bajo la línea.</p>
  */
 @Component
 public class CertificatePdfRenderer {
+
+    private static final Logger log = LoggerFactory.getLogger(CertificatePdfRenderer.class);
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es"));
@@ -90,57 +94,56 @@ public class CertificatePdfRenderer {
                              String recipientName, String verificationUrl,
                              float w, float h) {
         Course course = cert.getCourse();
+        float centerX = w / 2f;
 
-        // Wordmark superior: "> impulso.tech"
-        float wordmarkY = h - 78f;
-        drawWordmark(canvas, w / 2f, wordmarkY);
+        // Wordmark superior "> Impulso.tech".
+        drawWordmark(canvas, centerX, h - 60f);
 
-        // Divisor superior con la línea dorada muy fina.
-        drawDividerLine(canvas, w / 2f - 60f, w / 2f + 60f, h - 96f, BRAND_ACCENT_GOLD, 0.6f);
+        // Línea dorada bajo el wordmark.
+        drawDividerLine(canvas, centerX - 70f, centerX + 70f, h - 80f, BRAND_ACCENT_GOLD, 0.6f);
 
-        // "CERTIFICADO DE FINALIZACIÓN"
+        // Eyebrow con letter-spacing.
         text(canvas, "CERTIFICADO DE FINALIZACIÓN",
-                helvetica(true), 12.5f, BRAND_MUTED,
-                w / 2f, h - 122f, PdfContentByte.ALIGN_CENTER, 6f);
+                helvetica(true), 11.5f, BRAND_MUTED,
+                centerX, h - 108f, PdfContentByte.ALIGN_CENTER, 6f);
 
-        // Título principal grande
+        // Título principal.
         text(canvas, "Reconocimiento de logro",
-                times(true), 32f, BRAND_INK,
-                w / 2f, h - 168f, PdfContentByte.ALIGN_CENTER, 0f);
+                times(true), 34f, BRAND_INK,
+                centerX, h - 152f, PdfContentByte.ALIGN_CENTER, 0f);
 
-        // Ornamentos alrededor del título: dos diamantes pequeños.
-        drawDiamond(canvas, w / 2f - 165f, h - 158f, 4.5f, BRAND_PRIMARY);
-        drawDiamond(canvas, w / 2f + 165f, h - 158f, 4.5f, BRAND_PRIMARY);
+        // Diamantes decorativos DEBAJO del título como separadores.
+        drawDiamondSeparators(canvas, centerX, h - 178f);
 
-        // Subtítulo
+        // Subtítulo.
         text(canvas, "Se otorga el presente reconocimiento a",
                 helvetica(false), 12.5f, BRAND_INK_SOFT,
-                w / 2f, h - 205f, PdfContentByte.ALIGN_CENTER, 0f);
+                centerX, h - 208f, PdfContentByte.ALIGN_CENTER, 0f);
 
-        // Nombre del estudiante con serif elegante
+        // Nombre del estudiante (protagonista).
         text(canvas, recipientName,
-                times(true), 34f, BRAND_PRIMARY,
-                w / 2f, h - 258f, PdfContentByte.ALIGN_CENTER, 0f);
+                times(true), 36f, BRAND_PRIMARY,
+                centerX, h - 258f, PdfContentByte.ALIGN_CENTER, 0f);
 
-        // Línea decorativa debajo del nombre
-        drawDividerLine(canvas, w / 2f - 210f, w / 2f + 210f, h - 268f, BRAND_ACCENT_GOLD, 0.5f);
+        // Línea decorativa dorada bajo el nombre.
+        drawDividerLine(canvas, centerX - 230f, centerX + 230f, h - 272f, BRAND_ACCENT_GOLD, 0.5f);
 
         // "por completar exitosamente el curso"
         text(canvas, "por completar exitosamente el curso",
                 helvetica(false), 12.5f, BRAND_INK_SOFT,
-                w / 2f, h - 296f, PdfContentByte.ALIGN_CENTER, 0f);
+                centerX, h - 300f, PdfContentByte.ALIGN_CENTER, 0f);
 
-        // Nombre del curso (con comillas tipográficas)
+        // Nombre del curso entre comillas tipográficas.
         String courseName = course.getName() == null ? "" : course.getName();
         text(canvas, "«" + courseName + "»",
                 times(true), 22f, BRAND_INK,
-                w / 2f, h - 334f, PdfContentByte.ALIGN_CENTER, 0f);
+                centerX, h - 338f, PdfContentByte.ALIGN_CENTER, 0f);
 
-        // Chips de metadatos (tecnología / horas / dificultad)
-        drawMetaChips(canvas, course, w / 2f, h - 370f);
+        // Chips de metadatos.
+        drawMetaChips(canvas, course, centerX, h - 378f);
 
-        // Bloque inferior: firma + fecha + verificación en 3 columnas
-        drawFooter(canvas, cert, verificationUrl, w, h);
+        // Bloque inferior.
+        drawFooter(canvas, cert, verificationUrl, w);
     }
 
     /**
@@ -148,7 +151,6 @@ public class CertificatePdfRenderer {
      * indicada, imitando el estilo de la marca en la aplicación.
      */
     private void drawWordmark(PdfContentByte canvas, float centerX, float baselineY) {
-        // Como es una composición horizontal, computamos el ancho para centrar.
         Font monoFont = FontFactory.getFont(FontFactory.COURIER_BOLD, 16f, BRAND_INK);
         BaseFont mono = monoFont.getCalculatedBaseFont(false);
 
@@ -161,7 +163,7 @@ public class CertificatePdfRenderer {
         float wImpulso = mono.getWidthPoint(impulso, 16f);
         float wDot = mono.getWidthPoint(dot, 16f);
         float wTech = mono.getWidthPoint(tech, 16f);
-        float total = wPrompt + wImpulso + wDot + wTech;
+        float total = wPrompt + wImpulso + wDot + wTech + 8f; // 8 para el cursor
         float x = centerX - total / 2f;
 
         canvas.beginText();
@@ -175,12 +177,19 @@ public class CertificatePdfRenderer {
         canvas.showText(dot + tech);
         canvas.endText();
 
-        // Cursor de terminal parpadeante (bloque naranja) al final.
+        // Cursor de terminal (bloque naranja).
         canvas.saveState();
         canvas.setColorFill(BRAND_PRIMARY);
-        canvas.rectangle(x + total + 2f, baselineY - 1f, 6f, 12f);
+        canvas.rectangle(x + wPrompt + wImpulso + wDot + wTech + 2f, baselineY - 1f, 6f, 12f);
         canvas.fill();
         canvas.restoreState();
+    }
+
+    private void drawDiamondSeparators(PdfContentByte canvas, float centerX, float y) {
+        // Diamante central + dos líneas cortas doradas a los lados.
+        drawDiamond(canvas, centerX, y, 4f, BRAND_PRIMARY);
+        drawDividerLine(canvas, centerX - 70f, centerX - 12f, y, BRAND_ACCENT_GOLD, 0.5f);
+        drawDividerLine(canvas, centerX + 12f, centerX + 70f, y, BRAND_ACCENT_GOLD, 0.5f);
     }
 
     private void drawMetaChips(PdfContentByte canvas, Course course, float centerX, float baselineY) {
@@ -200,9 +209,8 @@ public class CertificatePdfRenderer {
         Font chipFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, BRAND_INK_SOFT);
         BaseFont bf = chipFont.getCalculatedBaseFont(false);
         float gap = 10f;
-        float paddingH = 10f;
-        float chipHeight = 20f;
-        // Ancho total para centrar.
+        float paddingH = 12f;
+        float chipHeight = 22f;
         float totalWidth = 0f;
         float[] widths = new float[count];
         for (int i = 0; i < count; i++) {
@@ -224,7 +232,7 @@ public class CertificatePdfRenderer {
         canvas.saveState();
         canvas.setColorFill(new Color(255, 242, 234));
         canvas.setColorStroke(new Color(255, 79, 0, 60));
-        canvas.setLineWidth(0.5f);
+        canvas.setLineWidth(0.6f);
         canvas.roundRectangle(x, y, w, h, h / 2f);
         canvas.fillStroke();
         canvas.restoreState();
@@ -237,43 +245,81 @@ public class CertificatePdfRenderer {
         canvas.endText();
     }
 
-    private void drawFooter(PdfContentByte canvas, Certificate cert,
-                            String verificationUrl, float w, float h) {
+    private void drawFooter(PdfContentByte canvas, Certificate cert, String verificationUrl, float w) {
         Course course = cert.getCourse();
-        String instructorName = displayName(course.getInstructor());
+        User instructor = course.getInstructor();
+        String instructorName = displayName(instructor);
         String issuedDate = DATE_FORMATTER.format(cert.getIssuedAt());
         String code = cert.getVerificationCode().toString();
 
-        // Franja horizontal separadora
-        drawDividerLine(canvas, 90f, w - 90f, 100f, BRAND_ACCENT_GOLD, 0.4f);
+        // Divisor superior del footer.
+        drawDividerLine(canvas, 90f, w - 90f, 150f, BRAND_ACCENT_GOLD, 0.4f);
 
-        // Columna izquierda: fecha de emisión
+        float footerCenterY = 110f;
         float leftX = 130f;
-        text(canvas, "FECHA DE EMISIÓN", helvetica(true), 8.5f, BRAND_MUTED,
-                leftX, 82f, PdfContentByte.ALIGN_LEFT, 4f);
-        text(canvas, issuedDate, helvetica(false), 12f, BRAND_INK,
-                leftX, 68f, PdfContentByte.ALIGN_LEFT, 0f);
-
-        // Columna central: firma del instructor
         float centerX = w / 2f;
-        drawSignatureLine(canvas, centerX - 70f, centerX + 70f, 78f);
+        float rightX = w - 130f;
+
+        // Izquierda: fecha de emisión.
+        text(canvas, "FECHA DE EMISIÓN", helvetica(true), 8.5f, BRAND_MUTED,
+                leftX, footerCenterY + 18f, PdfContentByte.ALIGN_LEFT, 4f);
+        text(canvas, issuedDate, helvetica(false), 12f, BRAND_INK,
+                leftX, footerCenterY, PdfContentByte.ALIGN_LEFT, 0f);
+
+        // Centro: firma del instructor (imagen si existe) + línea + nombre + rol.
+        float signatureLineY = footerCenterY + 8f;
+        drawInstructorSignatureImage(canvas, instructor, centerX, signatureLineY);
+        drawSignatureLine(canvas, centerX - 90f, centerX + 90f, signatureLineY);
         text(canvas, instructorName != null ? instructorName : "Equipo Impulso Tech",
                 times(true), 11f, BRAND_INK,
-                centerX, 63f, PdfContentByte.ALIGN_CENTER, 0f);
+                centerX, footerCenterY - 8f, PdfContentByte.ALIGN_CENTER, 0f);
         text(canvas, "INSTRUCTOR RESPONSABLE",
                 helvetica(true), 8.5f, BRAND_MUTED,
-                centerX, 51f, PdfContentByte.ALIGN_CENTER, 0f);
+                centerX, footerCenterY - 22f, PdfContentByte.ALIGN_CENTER, 4f);
 
-        // Columna derecha: código de verificación
-        float rightX = w - 130f;
+        // Derecha: código de verificación.
         text(canvas, "CÓDIGO DE VERIFICACIÓN", helvetica(true), 8.5f, BRAND_MUTED,
-                rightX, 82f, PdfContentByte.ALIGN_RIGHT, 4f);
+                rightX, footerCenterY + 18f, PdfContentByte.ALIGN_RIGHT, 4f);
         text(canvas, code, courier(false), 9.5f, BRAND_INK,
-                rightX, 68f, PdfContentByte.ALIGN_RIGHT, 0f);
+                rightX, footerCenterY, PdfContentByte.ALIGN_RIGHT, 0f);
+
+        // URL de verificación centrada bajo el footer para no chocar con esquinas.
         if (verificationUrl != null && !verificationUrl.isBlank()) {
-            text(canvas, "Verifica en: " + verificationUrl,
+            text(canvas, "Verifica su autenticidad en " + verificationUrl,
                     helvetica(false), 8f, BRAND_MUTED,
-                    rightX, 54f, PdfContentByte.ALIGN_RIGHT, 0f);
+                    w / 2f, 70f, PdfContentByte.ALIGN_CENTER, 0f);
+        }
+    }
+
+    /**
+     * Dibuja la firma escaneada/dibujada del instructor sobre la línea
+     * de firma, si el instructor la tiene cargada. Silenciosamente
+     * ignora imágenes con formato inválido o desmedidas para no romper
+     * la generación del PDF.
+     */
+    private void drawInstructorSignatureImage(PdfContentByte canvas, User instructor,
+                                              float centerX, float signatureLineY) {
+        if (instructor == null) return;
+        String raw = instructor.getSignatureImageUrl();
+        if (raw == null || raw.isBlank()) return;
+        String data = raw.trim();
+        // Aceptamos data URL de tipo image/png o image/jpeg.
+        int comma = data.indexOf(',');
+        if (!data.startsWith("data:image/") || comma < 0) return;
+        try {
+            byte[] bytes = Base64.getDecoder().decode(data.substring(comma + 1));
+            Image signature = Image.getInstance(bytes);
+            // Ajustamos manteniendo la relación de aspecto en una caja
+            // de 180×46 puntos, y la centramos justo encima de la línea.
+            float boxWidth = 180f;
+            float boxHeight = 46f;
+            signature.scaleToFit(boxWidth, boxHeight);
+            float x = centerX - signature.getScaledWidth() / 2f;
+            float y = signatureLineY + 4f;
+            signature.setAbsolutePosition(x, y);
+            canvas.addImage(signature);
+        } catch (Exception e) {
+            log.debug("Ignorando firma inválida del instructor {}: {}", instructor.getId(), e.getMessage());
         }
     }
 
@@ -289,7 +335,6 @@ public class CertificatePdfRenderer {
 
     private void drawFrame(PdfContentByte canvas, float w, float h) {
         float margin = 26f;
-        // Marco naranja exterior
         canvas.saveState();
         canvas.setColorStroke(BRAND_PRIMARY);
         canvas.setLineWidth(2.5f);
@@ -297,7 +342,6 @@ public class CertificatePdfRenderer {
         canvas.stroke();
         canvas.restoreState();
 
-        // Filete interior dorado más fino
         float inner = margin + 7f;
         canvas.saveState();
         canvas.setColorStroke(BRAND_ACCENT_GOLD);
@@ -310,7 +354,6 @@ public class CertificatePdfRenderer {
     private void drawCornerOrnaments(PdfContentByte canvas, float w, float h) {
         float m = 26f;
         float size = 26f;
-        // Cuatro esquinas: pequeñas cuñas naranjas + diamante interior.
         drawCornerWedge(canvas, m, m, size, 0);
         drawCornerWedge(canvas, w - m, m, size, 90);
         drawCornerWedge(canvas, w - m, h - m, size, 180);
@@ -318,17 +361,15 @@ public class CertificatePdfRenderer {
     }
 
     private void drawCornerWedge(PdfContentByte canvas, float x, float y, float size, int rotationDeg) {
-        // Cuñas triangulares que "abrazan" cada esquina desde el marco.
         canvas.saveState();
         canvas.setColorFill(BRAND_PRIMARY);
         double rad = Math.toRadians(rotationDeg);
         float cos = (float) Math.cos(rad);
         float sin = (float) Math.sin(rad);
-        // Dos triángulos formando una L rellena.
-        float dx = size * cos - 0f * sin;
-        float dy = size * sin + 0f * cos;
-        float ex = 0f * cos - size * sin;
-        float ey = 0f * sin + size * cos;
+        float dx = size * cos;
+        float dy = size * sin;
+        float ex = -size * sin;
+        float ey = size * cos;
         canvas.moveTo(x, y);
         canvas.lineTo(x + dx, y + dy);
         canvas.lineTo(x + dx / 2f, y + dy / 2f + ey / 2f);
@@ -338,7 +379,6 @@ public class CertificatePdfRenderer {
         canvas.fill();
         canvas.restoreState();
 
-        // Diamante decorativo en el interior de la esquina.
         float diamondX = x + (size / 1.6f) * cos + (size / 1.6f) * (-sin);
         float diamondY = y + (size / 1.6f) * sin + (size / 1.6f) * cos;
         drawDiamond(canvas, diamondX, diamondY, 3.2f, BRAND_ACCENT_GOLD);
@@ -357,9 +397,9 @@ public class CertificatePdfRenderer {
     }
 
     private void drawWatermark(PdfContentByte canvas, float w, float h) {
-        // Monograma "IT" enorme centrado en gris muy suave detrás del contenido.
+        // Monograma "IT" muy suave detrás del contenido.
         canvas.saveState();
-        canvas.setColorFill(new Color(32, 21, 21, 10));
+        canvas.setColorFill(new Color(32, 21, 21, 9));
         Font wm = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 260f);
         BaseFont bf = wm.getCalculatedBaseFont(false);
         canvas.beginText();
@@ -405,7 +445,6 @@ public class CertificatePdfRenderer {
         canvas.showTextAligned(alignment, text == null ? "" : text, x, y, 0);
         canvas.endText();
         if (letterSpacing != 0f) {
-            // Reset para no filtrar espacio a otros textos posteriores.
             canvas.setCharacterSpacing(0f);
         }
     }
