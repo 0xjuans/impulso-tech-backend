@@ -67,7 +67,12 @@ class CertificateServiceTest {
         sequence = new AtomicLong(100);
         repository = mock(CertificateRepository.class);
         renderer = new RecordingPdfRenderer();
-        service = new CertificateService(repository, renderer, "http://localhost:4200/verify");
+        service = new CertificateService(
+                repository,
+                renderer,
+                "http://localhost:4200/verify",
+                mock(tech.impulso.courses.repository.CourseRepository.class),
+                mock(tech.impulso.enrollments.repository.EnrollmentRepository.class));
         user = newUser(1L, "Ana", "Pérez", "anap");
 
         // Simulamos save() persistiendo en el mapa y asignando id / defaults.

@@ -201,4 +201,25 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
             """)
     List<tech.impulso.enrollments.entity.Enrollment> findRecentAll(
             org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Cursos que el usuario indicado ha completado, cuyo curso emite
+     * certificado y para los que aún no se ha emitido uno. Alimenta la
+     * sección "Pendientes por reclamar" de la página de certificados
+     * (RF-047).
+     */
+    @Query("""
+            select e from Enrollment e
+              join fetch e.course c
+            where e.user.id = :userId
+              and e.status = tech.impulso.enrollments.entity.EnrollmentStatus.COMPLETADO
+              and c.generatesCertificate = true
+              and not exists (
+                select 1 from tech.impulso.certificates.entity.Certificate cert
+                where cert.user.id = :userId and cert.course.id = c.id
+              )
+            order by e.completedAt desc nulls last, e.startedAt desc
+            """)
+    List<tech.impulso.enrollments.entity.Enrollment> findCompletedWithoutCertificate(
+            @Param("userId") Long userId);
 }

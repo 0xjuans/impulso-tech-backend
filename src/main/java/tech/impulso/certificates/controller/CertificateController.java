@@ -6,8 +6,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.impulso.certificates.dto.CertificateResponse;
@@ -78,5 +80,34 @@ public class CertificateController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + pdf.filename() + "\"")
                 .body(pdf.bytes());
+    }
+
+    /**
+     * Devuelve los cursos completados por el usuario para los cuales
+     * aún no se ha emitido certificado. Útil para poblar la sección
+     * "Pendientes por reclamar" del panel del estudiante.
+     */
+    @Operation(summary = "Certificados pendientes por reclamar",
+            description = "Cursos completados con generación de certificado activa cuyo certificado aún no ha sido emitido.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/users/me/certificates/pending")
+    public ResponseEntity<List<tech.impulso.certificates.dto.PendingCertificateResponse>> listPending() {
+        User user = currentUserService.requireAuthenticatedUser();
+        return ResponseEntity.ok(certificateService.listPendingForUser(user.getId()));
+    }
+
+    /**
+     * Reclama el certificado del curso indicado. La operación es
+     * idempotente: si ya existía uno emitido lo devuelve tal cual, sin
+     * crear un duplicado.
+     */
+    @Operation(summary = "Reclamar mi certificado",
+            description = "Emite el certificado del curso indicado si el usuario ya lo completó y el curso lo genera. Idempotente.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/users/me/certificates/course/{courseId}")
+    public ResponseEntity<CertificateResponse> claim(@PathVariable("courseId") Long courseId) {
+        User user = currentUserService.requireAuthenticatedUser();
+        CertificateResponse response = certificateService.claim(user, courseId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
