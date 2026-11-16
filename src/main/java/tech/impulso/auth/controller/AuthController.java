@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
+import tech.impulso.common.ratelimit.RateLimit;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -58,6 +59,7 @@ public class AuthController {
     @Operation(summary = "Registrar un nuevo usuario",
             description = "Crea la cuenta en estado PENDIENTE_VERIFICACION y envía un enlace de verificación al correo indicado.")
     @PostMapping("/register")
+    @RateLimit(bucket = "auth-register", limit = 5, windowSeconds = 3600)
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         UserResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -73,6 +75,7 @@ public class AuthController {
     @Operation(summary = "Verificar el correo electrónico",
             description = "Activa la cuenta asociada al token de verificación enviado por correo.")
     @PostMapping("/verify")
+    @RateLimit(bucket = "auth-verify", limit = 10, windowSeconds = 3600)
     public ResponseEntity<MessageResponse> verify(@RequestParam("token") @NotBlank String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok(new MessageResponse("La cuenta ha sido verificada correctamente."));
@@ -88,6 +91,7 @@ public class AuthController {
     @Operation(summary = "Reenviar el correo de verificación",
             description = "Genera un nuevo enlace de verificación cuando el usuario no ha confirmado su cuenta.")
     @PostMapping("/verify/resend")
+    @RateLimit(bucket = "auth-verify-resend", limit = 3, windowSeconds = 3600)
     public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.resendVerification(request.email());
         return ResponseEntity.ok(new MessageResponse("Si el correo corresponde a una cuenta pendiente, se ha reenviado el enlace de verificación."));
@@ -103,6 +107,7 @@ public class AuthController {
     @Operation(summary = "Iniciar sesión",
             description = "Valida las credenciales y emite un token JWT para las peticiones posteriores.")
     @PostMapping("/login")
+    @RateLimit(bucket = "auth-login", limit = 8, windowSeconds = 60)
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
@@ -117,6 +122,7 @@ public class AuthController {
     @Operation(summary = "Iniciar sesión con Google",
             description = "Verifica el ID token de Google y emite el token JWT propio. Crea la cuenta automáticamente si aún no existe.")
     @PostMapping("/google")
+    @RateLimit(bucket = "auth-google", limit = 10, windowSeconds = 60)
     public ResponseEntity<AuthResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
         return ResponseEntity.ok(googleAuthService.loginWithGoogle(request.idToken()));
     }
@@ -148,6 +154,7 @@ public class AuthController {
     @Operation(summary = "Solicitar recuperación de contraseña",
             description = "Envía un enlace temporal al correo del usuario para restablecer su contraseña. Responde siempre con éxito para no revelar la existencia de cuentas.")
     @PostMapping("/password/forgot")
+    @RateLimit(bucket = "auth-password-forgot", limit = 3, windowSeconds = 3600)
     public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.requestPasswordReset(request);
         return ResponseEntity.ok(new MessageResponse("Si el correo corresponde a una cuenta registrada, recibirá un enlace de recuperación."));
@@ -162,6 +169,7 @@ public class AuthController {
     @Operation(summary = "Restablecer contraseña",
             description = "Actualiza la contraseña del usuario a partir de un token de recuperación válido.")
     @PostMapping("/password/reset")
+    @RateLimit(bucket = "auth-password-reset", limit = 5, windowSeconds = 3600)
     public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
         return ResponseEntity.ok(new MessageResponse("La contraseña ha sido actualizada correctamente."));

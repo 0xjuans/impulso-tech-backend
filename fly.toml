@@ -22,7 +22,7 @@ primary_region = "gru"           # Sao Paulo: menor latencia desde Colombia.
   SERVER_PORT = "8080"
   # Origenes permitidos para CORS. El backend soporta multiples valores
   # separados por coma; ajustar cuando cambie el dominio del frontend.
-  APP_CORS_ORIGINS = "https://impulso-tech-frontend.vercel.app,http://localhost:4200"
+  APP_CORS_ORIGINS = "https://impulsotech.vercel.app,http://localhost:4200"
 
 [http_service]
   internal_port = 8080

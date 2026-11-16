@@ -39,6 +39,7 @@ public class EmailService {
     private final String senderName;
     private final String verificationBaseUrl;
     private final String passwordResetBaseUrl;
+    private final String messagesBaseUrl;
 
     public EmailService(
             JavaMailSender mailSender,
@@ -46,13 +47,15 @@ public class EmailService {
             @Value("${app.mail.sender:no-reply@impulso.tech}") String senderEmail,
             @Value("${app.mail.sender-name:Impulso Tech}") String senderName,
             @Value("${app.mail.verification-base-url:http://localhost:4200/auth/verify}") String verificationBaseUrl,
-            @Value("${app.mail.password-reset-base-url:http://localhost:4200/auth/reset-password}") String passwordResetBaseUrl) {
+            @Value("${app.mail.password-reset-base-url:http://localhost:4200/auth/reset-password}") String passwordResetBaseUrl,
+            @Value("${app.mail.messages-base-url:http://localhost:4200/student/messages}") String messagesBaseUrl) {
         this.mailSender = mailSender;
         this.enabled = enabled;
         this.senderEmail = senderEmail;
         this.senderName = senderName;
         this.verificationBaseUrl = verificationBaseUrl;
         this.passwordResetBaseUrl = passwordResetBaseUrl;
+        this.messagesBaseUrl = messagesBaseUrl;
     }
 
     /**
@@ -111,6 +114,63 @@ public class EmailService {
      * @param logTag    etiqueta corta para identificar el tipo de correo en el log.
      * @param link      enlace principal, útil como referencia rápida en el log.
      */
+    /**
+     * Envía la notificación por correo de un mensaje directo recibido
+     * (RF-061). Se dispara únicamente cuando el destinatario mantiene
+     * activa la preferencia {@code notifyByEmail}; la decisión se toma
+     * en el módulo de mensajería antes de invocar este método.
+     *
+     * @param toEmail       correo del destinatario del mensaje.
+     * @param recipientName nombre visible del destinatario para el saludo.
+     * @param senderName    nombre visible de quien envió el mensaje.
+     * @param preview       fragmento del mensaje (recortado y sin HTML).
+     */
+    public void sendDirectMessageEmail(String toEmail,
+                                       String recipientName,
+                                       String senderName,
+                                       String preview) {
+        String subject = "Nuevo mensaje de " + senderName + " — Impulso Tech";
+        String safeName = escapeHtml(recipientName != null ? recipientName : "");
+        String safeSender = escapeHtml(senderName != null ? senderName : "alguien");
+        String safePreview = escapeHtml(preview != null ? preview : "");
+        String heading = "Tienes un nuevo mensaje";
+        String body = "%s te escribió a través de Impulso Tech. Este es un extracto de su mensaje:"
+                .formatted(safeSender);
+        String bodyWithPreview = body + "<br><br><em style=\"display:block; padding:12px 16px; "
+                + "border-left:3px solid #ff4f00; background:#fff2ea; color:#201515; border-radius:4px; "
+                + "font-style:normal; white-space:pre-wrap;\">"
+                + safePreview
+                + "</em>";
+        String html = brandedTemplate(
+                "Nuevo mensaje en Impulso Tech",
+                heading + (safeName.isBlank() ? "" : ", " + safeName),
+                bodyWithPreview,
+                "> impulso messages --new",
+                "Abrir la conversación",
+                messagesBaseUrl,
+                "Puedes desactivar los avisos por correo desde tu perfil, sección Notificaciones.");
+        String plainText = """
+                %s te envió un nuevo mensaje en Impulso Tech.
+
+                "%s"
+
+                Ábrelo en %s
+
+                Puedes desactivar los avisos por correo desde tu perfil, sección Notificaciones.
+                """.formatted(senderName, preview, messagesBaseUrl);
+        deliver(toEmail, subject, html, plainText, "MENSAJE_DIRECTO", messagesBaseUrl);
+    }
+
+    /** Escapa los caracteres peligrosos para inyectar en HTML de correo. */
+    private static String escapeHtml(String input) {
+        return input
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
     private void deliver(String toEmail, String subject, String html, String plainText,
                          String logTag, String link) {
         if (!enabled) {

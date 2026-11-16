@@ -21,6 +21,7 @@ import tech.impulso.ai.dto.MessageResponse;
 import tech.impulso.ai.dto.SendMessageRequest;
 import tech.impulso.ai.dto.StartConversationRequest;
 import tech.impulso.ai.service.MascotService;
+import tech.impulso.common.ratelimit.RateLimit;
 
 /**
  * Controlador REST para la mascota IA de Impulso Tech (RF-017,
@@ -46,6 +47,7 @@ public class MascotController {
 
     @Operation(summary = "Iniciar una nueva conversación")
     @PostMapping("/conversations")
+    @RateLimit(bucket = "ai-conversation-start", limit = 10, windowSeconds = 3600)
     public ResponseEntity<ConversationResponse> start(@Valid @RequestBody StartConversationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.start(request));
     }
@@ -67,6 +69,7 @@ public class MascotController {
     @Operation(summary = "Enviar un mensaje a la mascota",
             description = "Envía el mensaje del usuario y devuelve la respuesta generada por la IA.")
     @PostMapping("/conversations/{id}/messages")
+    @RateLimit(bucket = "ai-message", limit = 40, windowSeconds = 3600)
     public ResponseEntity<MessageResponse> sendMessage(@PathVariable("id") Long id,
                                                        @Valid @RequestBody SendMessageRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.sendMessage(id, request));

@@ -10,6 +10,7 @@ import tech.impulso.users.entity.Role;
 import tech.impulso.users.entity.User;
 import tech.impulso.users.entity.UserStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -138,6 +139,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByStatus(UserStatus status);
 
     /**
+     * Devuelve los últimos usuarios registrados en la plataforma. Se
+     * utiliza en el feed "Últimos registros" del panel del
+     * administrador (RF-033).
+     *
+     * @param pageable objeto de paginación; se espera que fije el
+     *                 tamaño mediante {@code PageRequest.of(0, N)}.
+     */
+    List<User> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
      * Serie temporal de registros diarios de usuarios de los últimos
      * {@code days} días (RF-058). Devuelve tuplas
      * {@code [fecha (java.sql.Date), cantidad (Number)]} ordenadas
@@ -151,4 +162,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
             order by day
             """, nativeQuery = true)
     java.util.List<Object[]> countRegistrationsByDay(@org.springframework.data.repository.query.Param("days") int days);
+
+    /**
+     * Busca usuarios activos cuyo nombre de usuario, nombre o apellido
+     * contengan el término de búsqueda (comparación sin distinguir
+     * mayúsculas). Excluye al usuario indicado para que no aparezca en
+     * sus propios resultados. Se usa por el directorio de usuarios de
+     * mensajería directa (RF-061).
+     *
+     * @param term       texto a buscar (ya normalizado con {@code %} donde aplique).
+     * @param excludeId  identificador del usuario que hace la búsqueda.
+     * @param pageable   configuración de paginación y límite.
+     * @return usuarios coincidentes.
+     */
+    @Query("""
+            select u
+            from User u
+            where u.id <> :excludeId
+              and u.status = tech.impulso.users.entity.UserStatus.ACTIVA
+              and (
+                lower(u.username) like :term
+                or lower(u.firstName) like :term
+                or lower(u.lastName) like :term
+              )
+            order by u.username asc
+            """)
+    List<User> searchDirectory(
+            @Param("term") String term,
+            @Param("excludeId") Long excludeId,
+            Pageable pageable);
 }

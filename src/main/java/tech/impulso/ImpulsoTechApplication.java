@@ -2,6 +2,7 @@ package tech.impulso;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Punto de entrada de la aplicación backend de Impulso Tech.
@@ -15,6 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * que se encuentren dentro de este paquete raíz.</p>
  */
 @SpringBootApplication
+@EnableScheduling
 public class ImpulsoTechApplication {
 
     /**

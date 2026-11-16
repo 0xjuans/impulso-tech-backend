@@ -30,14 +30,20 @@ public class CertificateService {
     private final CertificateRepository certificateRepository;
     private final CertificatePdfRenderer pdfRenderer;
     private final String verificationBaseUrl;
+    private final tech.impulso.courses.repository.CourseRepository courseRepository;
+    private final tech.impulso.enrollments.repository.EnrollmentRepository enrollmentRepository;
 
     public CertificateService(CertificateRepository certificateRepository,
                               CertificatePdfRenderer pdfRenderer,
                               @Value("${app.certificates.verification-base-url}")
-                              String verificationBaseUrl) {
+                              String verificationBaseUrl,
+                              tech.impulso.courses.repository.CourseRepository courseRepository,
+                              tech.impulso.enrollments.repository.EnrollmentRepository enrollmentRepository) {
         this.certificateRepository = certificateRepository;
         this.pdfRenderer = pdfRenderer;
         this.verificationBaseUrl = verificationBaseUrl;
+        this.courseRepository = courseRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     /**
@@ -116,5 +122,56 @@ public class CertificateService {
      * sugerido para el header {@code Content-Disposition}.
      */
     public record GeneratedPdf(byte[] bytes, String filename) {
+    }
+
+    /**
+     * Reclama el certificado de un curso para el usuario indicado. La
+     * operación exige que el usuario tenga la inscripción en estado
+     * {@code COMPLETADO} y que el curso emita certificados; en caso
+     * contrario devuelve el mensaje de negocio correspondiente. Si ya
+     * había un certificado emitido se devuelve el existente, para que
+     * la operación sea idempotente y segura de reintentar (RF-047).
+     */
+    @Transactional
+    public CertificateResponse claim(User user, Long courseId) {
+        tech.impulso.courses.entity.Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new tech.impulso.common.exception.BusinessException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "El curso indicado no existe."));
+        if (!course.isGeneratesCertificate()) {
+            throw new tech.impulso.common.exception.BusinessException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "El curso indicado no otorga certificado.");
+        }
+        tech.impulso.enrollments.entity.Enrollment enrollment = enrollmentRepository
+                .findByUserIdAndCourseId(user.getId(), courseId)
+                .orElseThrow(() -> new tech.impulso.common.exception.BusinessException(
+                        org.springframework.http.HttpStatus.CONFLICT,
+                        "No estás inscrito en este curso."));
+        if (enrollment.getStatus() != tech.impulso.enrollments.entity.EnrollmentStatus.COMPLETADO) {
+            throw new tech.impulso.common.exception.BusinessException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Aún no completaste todas las lecciones obligatorias del curso.");
+        }
+        Certificate certificate = issueIfEligible(user, course)
+                .orElseThrow(() -> new tech.impulso.common.exception.BusinessException(
+                        org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                        "No pudimos emitir el certificado en este momento."));
+        return CertificateResponse.from(certificate);
+    }
+
+    /**
+     * Lista los cursos del usuario aptos para emitir certificado que
+     * aún no han sido reclamados. Alimenta la sección "Pendientes por
+     * reclamar" del frontend.
+     */
+    @Transactional(readOnly = true)
+    public List<tech.impulso.certificates.dto.PendingCertificateResponse> listPendingForUser(Long userId) {
+        return enrollmentRepository.findCompletedWithoutCertificate(userId).stream()
+                .map(e -> new tech.impulso.certificates.dto.PendingCertificateResponse(
+                        e.getCourse().getId(),
+                        e.getCourse().getName(),
+                        e.getCompletedAt()))
+                .toList();
     }
 }

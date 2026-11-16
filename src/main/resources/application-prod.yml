@@ -39,14 +39,9 @@ springdoc:
   api-docs:
     enabled: false
 
-# El indicador de salud de DataSource (db) intenta abrir una conexión de
-# validación cada 30s. Cuando Neon está en modo suspend, la validación
-# demora hasta 30s y el healthcheck HTTP de Fly declara la máquina como
-# no saludable, provocando reinicios innecesarios. Se desactiva porque
-# la app sí puede tolerar arranques en frío de Neon en la primera
-# petición real gracias a los timeouts de Hikari; el healthcheck sólo
-# debe validar que la JVM y Tomcat estén vivos.
+# Con PostgreSQL local en el VPS no hay cold starts; se reactiva el
+# health indicator de base de datos para un diagnóstico más completo.
 management:
   health:
     db:
-      enabled: false
+      enabled: true

@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tech.impulso.admin.dto.PagedResponse;
 import tech.impulso.common.exception.BusinessException;
 import tech.impulso.common.security.CurrentUserService;
@@ -13,6 +15,8 @@ import tech.impulso.notifications.dto.NotificationResponse;
 import tech.impulso.notifications.entity.Notification;
 import tech.impulso.notifications.entity.NotificationType;
 import tech.impulso.notifications.repository.NotificationRepository;
+import tech.impulso.preferences.entity.UserPreferences;
+import tech.impulso.preferences.repository.UserPreferencesRepository;
 import tech.impulso.users.entity.User;
 
 import java.time.OffsetDateTime;
@@ -33,11 +37,17 @@ public class NotificationService {
 
     private final NotificationRepository repository;
     private final CurrentUserService currentUserService;
+    private final NotificationSseBroadcaster sseBroadcaster;
+    private final UserPreferencesRepository preferencesRepository;
 
     public NotificationService(NotificationRepository repository,
-                               CurrentUserService currentUserService) {
+                               CurrentUserService currentUserService,
+                               NotificationSseBroadcaster sseBroadcaster,
+                               UserPreferencesRepository preferencesRepository) {
         this.repository = repository;
         this.currentUserService = currentUserService;
+        this.sseBroadcaster = sseBroadcaster;
+        this.preferencesRepository = preferencesRepository;
     }
 
     /**
@@ -57,6 +67,12 @@ public class NotificationService {
                        String message,
                        String relatedType,
                        Long relatedId) {
+        // Respetamos las preferencias del destinatario: si el usuario
+        // deshabilitó esta categoría de avisos, no se crea la
+        // notificación ni se difunde por SSE.
+        if (!isEnabledForUser(user, type)) {
+            return;
+        }
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setType(type);
@@ -64,7 +80,24 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRelatedType(relatedType);
         notification.setRelatedId(relatedId);
-        repository.save(notification);
+        Notification saved = repository.save(notification);
+
+        // Empujamos la notificación por SSE únicamente después de que la
+        // transacción confirme, para no entregar al cliente eventos que
+        // luego podrían revertirse. Si no hay transacción activa, se
+        // publica de inmediato.
+        Long recipientId = user.getId();
+        NotificationResponse payload = NotificationResponse.from(saved);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sseBroadcaster.broadcast(recipientId, payload);
+                }
+            });
+        } else {
+            sseBroadcaster.broadcast(recipientId, payload);
+        }
     }
 
     /**
@@ -141,5 +174,30 @@ public class NotificationService {
                     "No puede eliminar notificaciones de otro usuario.");
         }
         repository.delete(notification);
+    }
+
+    /**
+     * Consulta las preferencias del destinatario y determina si la
+     * categoría a la que pertenece la notificación está habilitada.
+     * Si el usuario aún no tiene fila de preferencias, se asume el
+     * comportamiento por defecto (todas activas) para no perder avisos.
+     *
+     * @param user usuario destinatario.
+     * @param type tipo funcional del aviso.
+     * @return {@code true} si el usuario desea recibir esta categoría.
+     */
+    private boolean isEnabledForUser(User user, NotificationType type) {
+        UserPreferences prefs = preferencesRepository.findById(user.getId()).orElse(null);
+        if (prefs == null) {
+            return true;
+        }
+        return switch (type) {
+            case BADGE_AWARDED, LEVEL_UP -> prefs.isNotifyAchievements();
+            case COURSE_COMPLETED, STREAK_MILESTONE -> prefs.isNotifyProgress();
+            case EVALUATION_PASSED, EVALUATION_FAILED -> prefs.isNotifyEvaluations();
+            // Los mensajes directos son puntuales y esperados: se
+            // muestran siempre en la campana, igual que un aviso genérico.
+            case GENERIC, MESSAGE_RECEIVED -> true;
+        };
     }
 }

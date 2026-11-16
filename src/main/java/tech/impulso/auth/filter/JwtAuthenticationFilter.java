@@ -61,17 +61,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return HttpMethod.OPTIONS.matches(request.getMethod());
     }
 
+    /**
+     * Indica si la petición corresponde al stream SSE de notificaciones,
+     * donde el token viaja como parámetro por limitaciones del cliente
+     * {@code EventSource}.
+     */
+    private boolean isSseStreamRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri != null && uri.endsWith("/api/users/me/notifications/stream");
+    }
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header == null || !header.startsWith(BEARER_PREFIX)) {
+        String token = null;
+        if (header != null && header.startsWith(BEARER_PREFIX)) {
+            token = header.substring(BEARER_PREFIX.length());
+        } else if (isSseStreamRequest(request)) {
+            // El cliente EventSource del navegador no permite enviar el
+            // encabezado Authorization, así que para el endpoint de SSE
+            // aceptamos el token en el parámetro `access_token`.
+            token = request.getParameter("access_token");
+        }
+        if (token == null || token.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
-
-        String token = header.substring(BEARER_PREFIX.length());
         try {
             Claims claims = jwtService.parseToken(token);
             if (tokenBlacklistService.isBlacklisted(claims.getId())) {

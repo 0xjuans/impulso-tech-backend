@@ -23,6 +23,7 @@ import tech.impulso.labs.dto.ExecutionResultResponse;
 import tech.impulso.labs.dto.LabRequest;
 import tech.impulso.labs.dto.LabResponse;
 import tech.impulso.labs.dto.LabSubmissionResponse;
+import tech.impulso.common.ratelimit.RateLimit;
 import tech.impulso.labs.service.LabService;
 
 import java.util.List;
@@ -90,6 +91,7 @@ public class LabController {
     @Operation(summary = "Ejecutar código dentro del laboratorio",
             description = "Ejecuta el código en el sandbox sin persistir la entrega.")
     @PostMapping("/{id}/executions")
+    @RateLimit(bucket = "lab-execute", limit = 20, windowSeconds = 60)
     public ResponseEntity<ExecutionResultResponse> tryExecute(@PathVariable("id") Long id,
                                                               @Valid @RequestBody ExecuteCodeRequest request) {
         return ResponseEntity.ok(service.tryExecute(id, request));
@@ -98,6 +100,7 @@ public class LabController {
     @Operation(summary = "Enviar una entrega",
             description = "Persiste el código enviado por el estudiante y el resultado de la ejecución.")
     @PostMapping("/{id}/submissions")
+    @RateLimit(bucket = "lab-submit", limit = 10, windowSeconds = 60)
     public ResponseEntity<LabSubmissionResponse> submit(@PathVariable("id") Long id,
                                                         @Valid @RequestBody ExecuteCodeRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.submit(id, request));
