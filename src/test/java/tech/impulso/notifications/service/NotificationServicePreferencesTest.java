@@ -44,7 +44,8 @@ class NotificationServicePreferencesTest {
         currentUserService = mock(CurrentUserService.class);
         broadcaster = mock(NotificationSseBroadcaster.class);
         preferencesRepository = mock(UserPreferencesRepository.class);
-        service = new NotificationService(repository, currentUserService, broadcaster, preferencesRepository);
+        service = new NotificationService(repository, currentUserService, broadcaster, preferencesRepository,
+                mock(tech.impulso.auth.service.EmailService.class));
         user = new User();
         user.setId(101L);
         when(repository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));

@@ -39,15 +39,18 @@ public class NotificationService {
     private final CurrentUserService currentUserService;
     private final NotificationSseBroadcaster sseBroadcaster;
     private final UserPreferencesRepository preferencesRepository;
+    private final tech.impulso.auth.service.EmailService emailService;
 
     public NotificationService(NotificationRepository repository,
                                CurrentUserService currentUserService,
                                NotificationSseBroadcaster sseBroadcaster,
-                               UserPreferencesRepository preferencesRepository) {
+                               UserPreferencesRepository preferencesRepository,
+                               tech.impulso.auth.service.EmailService emailService) {
         this.repository = repository;
         this.currentUserService = currentUserService;
         this.sseBroadcaster = sseBroadcaster;
         this.preferencesRepository = preferencesRepository;
+        this.emailService = emailService;
     }
 
     /**
@@ -88,16 +91,78 @@ public class NotificationService {
         // publica de inmediato.
         Long recipientId = user.getId();
         NotificationResponse payload = NotificationResponse.from(saved);
+        // Consulta la preferencia de correo del destinatario UNA vez para
+        // decidir si además del SSE hay que enviar un email.
+        boolean emailWanted = wantsEmail(user, type);
+        String toEmail = user.getEmail();
+        String recipientName = displayName(user);
+        String subject = title;
+        String heading = title;
+        String body = message;
+        String ctaLabel = ctaLabelFor(type);
+        String ctaUrl = ctaUrlFor(type, relatedType, relatedId);
+        String logTag = "NOTIF_" + type.name();
+
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
                     sseBroadcaster.broadcast(recipientId, payload);
+                    if (emailWanted && toEmail != null && !toEmail.isBlank()) {
+                        emailService.sendGenericNotificationEmail(
+                                toEmail, recipientName, subject, heading, body, ctaLabel, ctaUrl, logTag);
+                    }
                 }
             });
         } else {
             sseBroadcaster.broadcast(recipientId, payload);
+            if (emailWanted && toEmail != null && !toEmail.isBlank()) {
+                emailService.sendGenericNotificationEmail(
+                        toEmail, recipientName, subject, heading, body, ctaLabel, ctaUrl, logTag);
+            }
         }
+    }
+
+    /**
+     * Determina si el destinatario quiere recibir la notificación por
+     * correo. Los mensajes directos ({@code MESSAGE_RECEIVED}) tienen
+     * su propio flujo con extracto del contenido y se excluyen aquí
+     * para no duplicar los correos.
+     */
+    private boolean wantsEmail(User user, NotificationType type) {
+        if (type == NotificationType.MESSAGE_RECEIVED) {
+            return false;
+        }
+        return preferencesRepository.findById(user.getId())
+                .map(p -> p.isNotifyByEmail())
+                .orElse(false);
+    }
+
+    private static String displayName(User u) {
+        String first = u.getFirstName() != null ? u.getFirstName() : "";
+        String last = u.getLastName() != null ? u.getLastName() : "";
+        String composed = (first + " " + last).trim();
+        return composed.isEmpty() ? u.getUsername() : composed;
+    }
+
+    private static String ctaLabelFor(NotificationType type) {
+        return switch (type) {
+            case BADGE_AWARDED, LEVEL_UP -> "Ver mi progreso";
+            case COURSE_COMPLETED -> "Ver mis certificados";
+            case EVALUATION_PASSED, EVALUATION_FAILED -> "Ver la evaluación";
+            case STREAK_MILESTONE -> "Continuar mi racha";
+            default -> "Abrir Impulso Tech";
+        };
+    }
+
+    private String ctaUrlFor(NotificationType type, String relatedType, Long relatedId) {
+        String base = emailService.getAppBaseUrl();
+        return switch (type) {
+            case COURSE_COMPLETED -> base + "/student/certificates";
+            case BADGE_AWARDED, LEVEL_UP, STREAK_MILESTONE -> base + "/student/profile";
+            case EVALUATION_PASSED, EVALUATION_FAILED -> base + "/student/home";
+            default -> base + "/student/home";
+        };
     }
 
     /**

@@ -40,6 +40,7 @@ public class EmailService {
     private final String verificationBaseUrl;
     private final String passwordResetBaseUrl;
     private final String messagesBaseUrl;
+    private final String appBaseUrl;
 
     public EmailService(
             JavaMailSender mailSender,
@@ -48,7 +49,8 @@ public class EmailService {
             @Value("${app.mail.sender-name:Impulso Tech}") String senderName,
             @Value("${app.mail.verification-base-url:http://localhost:4200/auth/verify}") String verificationBaseUrl,
             @Value("${app.mail.password-reset-base-url:http://localhost:4200/auth/reset-password}") String passwordResetBaseUrl,
-            @Value("${app.mail.messages-base-url:http://localhost:4200/student/messages}") String messagesBaseUrl) {
+            @Value("${app.mail.messages-base-url:http://localhost:4200/student/messages}") String messagesBaseUrl,
+            @Value("${app.mail.app-base-url:http://localhost:4200}") String appBaseUrl) {
         this.mailSender = mailSender;
         this.enabled = enabled;
         this.senderEmail = senderEmail;
@@ -56,6 +58,12 @@ public class EmailService {
         this.verificationBaseUrl = verificationBaseUrl;
         this.passwordResetBaseUrl = passwordResetBaseUrl;
         this.messagesBaseUrl = messagesBaseUrl;
+        this.appBaseUrl = appBaseUrl;
+    }
+
+    /** URL base pública del frontend, usada para armar enlaces de CTAs. */
+    public String getAppBaseUrl() {
+        return appBaseUrl;
     }
 
     /**
@@ -114,6 +122,58 @@ public class EmailService {
      * @param logTag    etiqueta corta para identificar el tipo de correo en el log.
      * @param link      enlace principal, útil como referencia rápida en el log.
      */
+    /**
+     * Envía por correo una notificación genérica del centro de avisos
+     * (RF-026). Se dispara desde {@code NotificationService} cuando el
+     * destinatario mantiene activa la preferencia {@code notifyByEmail}
+     * y la notificación es de un tipo diferente al de mensajes directos
+     * (esos tienen su propio flujo con extracto de contenido).
+     *
+     * @param toEmail       correo del destinatario.
+     * @param recipientName nombre visible del destinatario.
+     * @param subject       asunto listo para mostrar en la bandeja.
+     * @param heading       encabezado principal del correo.
+     * @param body          cuerpo detallado.
+     * @param ctaLabel      texto del botón de acción.
+     * @param ctaUrl        URL absoluta del botón de acción.
+     * @param logTag        etiqueta corta para el log ("BADGE", "XP", …).
+     */
+    public void sendGenericNotificationEmail(String toEmail,
+                                             String recipientName,
+                                             String subject,
+                                             String heading,
+                                             String body,
+                                             String ctaLabel,
+                                             String ctaUrl,
+                                             String logTag) {
+        String safeName = escapeHtml(recipientName != null ? recipientName : "");
+        String safeHeading = escapeHtml(heading != null ? heading : "Hola");
+        String safeBody = escapeHtml(body != null ? body : "");
+        String fullHeading = safeHeading + (safeName.isBlank() ? "" : ", " + safeName);
+        String html = brandedTemplate(
+                subject != null ? subject : "Nueva notificación en Impulso Tech",
+                fullHeading,
+                safeBody,
+                "> impulso notify --new",
+                ctaLabel != null ? ctaLabel : "Ir a la plataforma",
+                ctaUrl != null ? ctaUrl : appBaseUrl,
+                "Puedes desactivar los avisos por correo desde tu perfil, sección Notificaciones.");
+        String plainText = """
+                %s
+
+                %s
+
+                Abre la plataforma en %s
+
+                Puedes desactivar los avisos por correo desde tu perfil, sección Notificaciones.
+                """.formatted(heading, body, ctaUrl != null ? ctaUrl : appBaseUrl);
+        deliver(toEmail,
+                subject != null ? subject : "Nueva notificación en Impulso Tech",
+                html, plainText,
+                logTag != null ? logTag : "NOTIFICACION",
+                ctaUrl != null ? ctaUrl : appBaseUrl);
+    }
+
     /**
      * Envía la notificación por correo de un mensaje directo recibido
      * (RF-061). Se dispara únicamente cuando el destinatario mantiene
